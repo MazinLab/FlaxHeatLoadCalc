@@ -1,21 +1,31 @@
 /* ============================================================
-   Cryogenic Cable Heat Load Calculator — Dark Theme Stylesheet
-   Scientific instrument aesthetic: dark bg, accent blue, mono fonts
+   Cryogenic Cable Heat Load Calculator
+   Aesthetic: Laboratory instrument panel — Lakeshore meets oscilloscope
    ============================================================ */
 
 :root {
-    --bg-primary:    #0f1923;
-    --bg-secondary:  #162230;
-    --bg-card:       #1a2a3a;
-    --text-primary:  #e8edf2;
-    --text-secondary:#8899aa;
-    --accent:        #4fc3f7;
-    --accent-glow:   rgba(79, 195, 247, 0.15);
-    --success:       #66bb6a;
-    --border:        #2a3a4a;
-    --input-bg:      #0d1520;
-    --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --bg-primary:     #080d12;
+    --bg-secondary:   #0e1519;
+    --bg-card:        #111a22;
+    --bg-inset:       #060a0e;
+    --text-primary:   #d8e2ec;
+    --text-secondary: #6b8399;
+    --text-dim:       #3d5266;
+    --accent:         #00d4ff;
+    --accent-mid:     rgba(0, 212, 255, 0.4);
+    --accent-glow:    rgba(0, 212, 255, 0.12);
+    --accent-deep:    rgba(0, 212, 255, 0.06);
+    --warm:           #ff9f43;
+    --border:         #1a2733;
+    --border-light:   #243340;
+    --input-bg:       #060a0e;
+    --font-display:   'Oxanium', 'Orbitron', sans-serif;
+    --font-body:      'Source Sans 3', 'Segoe UI', sans-serif;
+    --font-mono:      'Space Mono', 'JetBrains Mono', 'Fira Code', monospace;
+
+    --radius-sm:      4px;
+    --radius-md:      6px;
+    --radius-lg:      10px;
 }
 
 /* ── Reset ── */
@@ -37,86 +47,130 @@ html {
 }
 
 body {
-    background-color: var(--bg-primary);
+    background: var(--bg-primary);
     color: var(--text-primary);
-    font-family: var(--font-sans);
+    font-family: var(--font-body);
+    font-weight: 400;
     line-height: 1.6;
     min-height: 100vh;
     display: flex;
     flex-direction: column;
+    /* Subtle noise grain */
+    background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(0, 212, 255, 0.02) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(0, 100, 180, 0.015) 0%, transparent 50%);
 }
 
 /* ── Header ── */
 
 header {
     text-align: center;
-    padding: 2rem 1.5rem 1.5rem;
+    padding: 1.75rem 1.5rem 1.5rem;
+    background: var(--bg-secondary);
     border-bottom: 1px solid var(--border);
-    background-color: var(--bg-secondary);
+    position: relative;
+}
+
+/* Accent line at very top — like the power-on indicator of an instrument */
+header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--accent) 20%,
+        var(--accent) 80%,
+        transparent 100%
+    );
+    opacity: 0.7;
 }
 
 header h1 {
-    font-size: 1.6rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    font-family: var(--font-display);
+    font-size: 1.45rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--text-primary);
 }
 
 header .subtitle {
-    margin-top: 0.4rem;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    margin-top: 0.35rem;
     font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
 }
 
 /* ── Main layout ── */
 
 main {
-    max-width: 1100px;
+    max-width: 1160px;
     width: 100%;
-    margin: 2rem auto;
+    margin: 1.75rem auto;
     padding: 0 1.5rem;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: 1.75rem;
     flex: 1;
 }
 
-/* ── Input panel ── */
+/* ── Panel shared ── */
 
 .input-panel {
-    background-color: var(--bg-secondary);
+    background: var(--bg-secondary);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.4rem 1.4rem;
+    /* Subtle inset shadow for instrument recess feel */
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.02),
+        0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-/* Section headings inside panels */
+/* Section headings — small caps, accent colored, with divider */
 
 .input-panel h2,
 .results-panel h2 {
-    font-size: 0.7rem;
+    font-family: var(--font-display);
+    font-size: 0.68rem;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
-    padding-top: 1.25rem;
-    border-top: 1px solid var(--border);
-}
-
-/* First h2 doesn't need top border/spacing */
-.input-panel h2:first-of-type {
     margin-top: 1.25rem;
+    margin-bottom: 0.65rem;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-/* ── Form groups ── */
+/* Decorative dash before section titles */
+.input-panel h2::before {
+    content: '';
+    width: 12px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.5;
+}
+
+.input-panel h2:first-of-type {
+    margin-top: 1rem;
+}
+
+/* ── Form controls ── */
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.3rem;
     flex: 1;
     min-width: 120px;
 }
@@ -124,52 +178,62 @@ main {
 .form-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
+    gap: 0.65rem;
+    margin-bottom: 0.65rem;
 }
 
 label {
-    font-size: 0.75rem;
-    font-weight: 500;
+    font-family: var(--font-body);
+    font-size: 0.7rem;
+    font-weight: 600;
     color: var(--text-secondary);
-    letter-spacing: 0.03em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
 }
 
 input[type="number"],
 select {
-    background-color: var(--input-bg);
+    background: var(--input-bg);
     color: var(--text-primary);
     border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 0.45rem 0.6rem;
+    border-radius: var(--radius-sm);
+    padding: 0.45rem 0.55rem;
     font-family: var(--font-mono);
-    font-size: 0.875rem;
+    font-size: 0.82rem;
     width: 100%;
     appearance: none;
     -webkit-appearance: none;
     outline: none;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    /* Inset shadow like a recessed control */
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 input[type="number"]:focus,
 select:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-glow);
+    box-shadow:
+        inset 0 1px 3px rgba(0, 0, 0, 0.25),
+        0 0 0 2px var(--accent-glow),
+        0 0 8px var(--accent-deep);
 }
 
-/* Custom select arrow */
+input[type="number"]:hover,
+select:hover {
+    border-color: var(--border-light);
+}
+
 select {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238899aa' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0.5 0.5l4.5 4.5 4.5-4.5' stroke='%236b8399' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 0.65rem center;
-    padding-right: 2rem;
+    background-position: right 0.6rem center;
+    padding-right: 1.8rem;
 }
 
-/* Remove spinner arrows from number inputs in webkit */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
-    opacity: 0.4;
+    opacity: 0.3;
 }
 
 /* ── Calculate button ── */
@@ -177,37 +241,47 @@ input[type="number"]::-webkit-outer-spin-button {
 #calculate-btn {
     display: block;
     width: 100%;
-    margin-top: 1.5rem;
-    padding: 0.7rem 1rem;
-    background-color: var(--accent);
+    margin-top: 1.35rem;
+    padding: 0.65rem 1rem;
+    background: linear-gradient(180deg, var(--accent) 0%, #00b8d9 100%);
     color: var(--bg-primary);
     border: none;
-    border-radius: 4px;
-    font-family: var(--font-sans);
-    font-size: 0.9rem;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-display);
+    font-size: 0.82rem;
     font-weight: 700;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 4px rgba(0, 212, 255, 0.15);
+    position: relative;
+    overflow: hidden;
+}
+
+#calculate-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.12) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 #calculate-btn:hover {
-    background-color: #81d4fa;
-    box-shadow: 0 0 12px var(--accent-glow);
+    background: linear-gradient(180deg, #33ddff 0%, #00c8e8 100%);
+    box-shadow:
+        0 2px 8px rgba(0, 212, 255, 0.25),
+        0 0 20px rgba(0, 212, 255, 0.1);
+    transform: translateY(-1px);
 }
 
 #calculate-btn:active {
-    background-color: #29b6f6;
-    transform: translateY(1px);
-    box-shadow: none;
+    background: linear-gradient(180deg, #00b8d9 0%, #0099b3 100%);
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 212, 255, 0.1);
 }
 
 /* ── Results panel ── */
-
-.results-panel {
-    /* No persistent chrome — the panel content provides its own framing */
-}
 
 .results-hidden {
     display: none;
@@ -215,94 +289,127 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .results-visible {
     display: block;
+    animation: resultsReveal 0.35s ease-out;
 }
 
-/* ── Result cards ── */
+@keyframes resultsReveal {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.results-panel h2 {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+}
+
+/* ── Result cards — digital readout style ── */
 
 .result-cards {
     display: flex;
-    flex-direction: row;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    gap: 0.85rem;
+    margin-bottom: 1.4rem;
 }
 
 .result-card {
     flex: 1;
-    background-color: var(--bg-card);
+    background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 1rem 1.25rem;
+    border-radius: var(--radius-md);
+    padding: 1rem 1.1rem;
     text-align: center;
     display: flex;
     flex-direction: column;
-    gap: 0.4rem;
+    gap: 0.35rem;
+    /* Recessed readout look */
+    box-shadow:
+        inset 0 1px 4px rgba(0, 0, 0, 0.3),
+        0 1px 0 rgba(255, 255, 255, 0.015);
 }
 
 .result-card.primary {
-    border-color: var(--accent);
-    background: linear-gradient(135deg, var(--bg-card) 60%, rgba(79, 195, 247, 0.08));
+    border-color: rgba(0, 212, 255, 0.3);
+    background:
+        linear-gradient(135deg, var(--bg-card) 50%, rgba(0, 212, 255, 0.04));
+    box-shadow:
+        inset 0 1px 4px rgba(0, 0, 0, 0.3),
+        0 0 15px rgba(0, 212, 255, 0.04);
 }
 
 .result-label {
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.1em;
+    font-family: var(--font-body);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--text-secondary);
+    color: var(--text-dim);
 }
 
 .result-value {
     font-family: var(--font-mono);
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-size: 1.45rem;
+    font-weight: 700;
     color: var(--text-primary);
-    line-height: 1.2;
+    line-height: 1.15;
+    /* Subtle digital readout glow */
+    text-shadow: 0 0 8px rgba(216, 226, 236, 0.08);
 }
 
 .result-card.primary .result-value {
     color: var(--accent);
+    text-shadow:
+        0 0 10px rgba(0, 212, 255, 0.3),
+        0 0 30px rgba(0, 212, 255, 0.08);
 }
 
-/* ── Breakdown section ── */
+/* ── Breakdown ── */
 
 .result-breakdown {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.4rem;
 }
 
 .result-breakdown h3,
 .chart-container h3 {
-    font-size: 0.7rem;
+    font-family: var(--font-display);
+    font-size: 0.62rem;
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--text-secondary);
-    margin-bottom: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 0.6rem;
 }
 
-/* ── Breakdown table ── */
+/* ── Table — instrument data readout ── */
 
 table {
     width: 100%;
     border-collapse: collapse;
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
 
 thead th {
-    font-size: 0.65rem;
+    font-family: var(--font-body);
+    font-size: 0.58rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--text-secondary);
+    color: var(--text-dim);
     text-align: left;
-    padding: 0.45rem 0.6rem;
+    padding: 0.4rem 0.55rem;
     border-bottom: 1px solid var(--border);
-    background-color: var(--bg-secondary);
+    background: var(--bg-secondary);
 }
 
 tbody tr {
-    border-bottom: 1px solid var(--border);
-    transition: background-color 0.1s ease;
+    border-bottom: 1px solid rgba(26, 39, 51, 0.6);
+    transition: background-color 0.12s ease;
 }
 
 tbody tr:last-child {
@@ -310,27 +417,36 @@ tbody tr:last-child {
 }
 
 tbody tr:hover {
-    background-color: var(--bg-card);
+    background: rgba(0, 212, 255, 0.02);
 }
 
 tbody td {
-    padding: 0.5rem 0.6rem;
+    padding: 0.45rem 0.55rem;
     color: var(--text-primary);
     vertical-align: middle;
 }
 
 tbody td:first-child {
     color: var(--accent);
-    font-weight: 600;
+    font-weight: 700;
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
 }
 
-/* ── Chart container ── */
+/* Fraction column — warm accent */
+tbody td:last-child {
+    color: var(--warm);
+}
+
+/* ── Chart ── */
 
 .chart-container {
-    background-color: var(--bg-card);
+    background: var(--bg-card);
     border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 1.25rem;
+    border-radius: var(--radius-md);
+    padding: 1.1rem;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 #temp-profile-chart {
@@ -342,25 +458,25 @@ tbody td:first-child {
 
 footer {
     text-align: center;
-    padding: 1.25rem 1.5rem;
+    padding: 1.1rem 1.5rem;
     border-top: 1px solid var(--border);
-    background-color: var(--bg-secondary);
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-family: var(--font-body);
 }
 
 footer a {
-    color: var(--accent);
+    color: var(--text-secondary);
     text-decoration: none;
     transition: color 0.15s ease;
 }
 
 footer a:hover {
-    color: #81d4fa;
-    text-decoration: underline;
+    color: var(--accent);
 }
 
-/* ── Responsive: collapse to single column below 900px ── */
+/* ── Responsive ── */
 
 @media (max-width: 900px) {
     main {
@@ -371,7 +487,21 @@ footer a:hover {
 
 @media (max-width: 500px) {
     header h1 {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
+        letter-spacing: 0.04em;
+    }
+
+    header .subtitle {
+        font-size: 0.68rem;
+    }
+
+    main {
+        padding: 0 1rem;
+        margin: 1rem auto;
+    }
+
+    .input-panel {
+        padding: 1rem;
     }
 
     .result-cards {
@@ -381,4 +511,38 @@ footer a:hover {
     .result-value {
         font-size: 1.2rem;
     }
+
+    table {
+        font-size: 0.68rem;
+    }
+
+    thead th {
+        font-size: 0.52rem;
+    }
+}
+
+/* ── Selection styling ── */
+
+::selection {
+    background: rgba(0, 212, 255, 0.25);
+    color: #fff;
+}
+
+/* ── Scrollbar ── */
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-light);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-dim);
 }
