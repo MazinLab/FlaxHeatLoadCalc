@@ -173,12 +173,25 @@
 
         // Material conductivity plot
         const conductivityColors = ['#ff9f43', '#4fc3f7', '#66bb6a'];
-        renderConductivityPlot('conductivity-chart', [
+        const plotMaterials = [
             { material: innerMat, label: 'Inner: ' + innerMat.name, color: conductivityColors[0] },
             { material: dielMat, label: 'Dielectric: ' + dielMat.name, color: conductivityColors[1] },
             { material: outerMat, label: 'Outer: ' + outerMat.name, color: conductivityColors[2] }
-        ], T_cold, T_hot);
+        ];
+        renderConductivityPlot('conductivity-chart', plotMaterials, T_cold, T_hot);
         document.getElementById('conductivity-chart-container').style.display = '';
+
+        // References below conductivity plot
+        const refsEl = document.getElementById('conductivity-refs');
+        const seen = new Set();
+        const refLines = [];
+        for (const { material } of plotMaterials) {
+            if (!seen.has(material.name)) {
+                seen.add(material.name);
+                refLines.push('<strong>' + material.name + ':</strong> ' + material.source);
+            }
+        }
+        refsEl.innerHTML = refLines.join('<br>');
 
         // Show results
         resultsDisplay.className = 'results-visible';

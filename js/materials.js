@@ -164,25 +164,27 @@ const MATERIALS = {
     },
 
     nb: {
-        name: 'Niobium (Nb)',
+        name: 'Niobium (Nb, RRR~40)',
         category: 'conductor',
         superconducting: true,
         validRange: [0.1, 300],
-        stitchRange: [1.0, 4.0],
+        stitchRange: [1.5, 4.0],
         subK: {
-            // Nb is superconducting below Tc ≈ 9.25 K; below ~1 K phonon-dominated
-            // k ~ 0.02 * T^2.5 W/(m·K) from Pobell, Matter and Methods at Low Temperatures
+            // Superconducting below Tc=9.25 K; phonon boundary scattering dominates
+            // k ~ T^3 (Casimir regime) for T << Tc; fit for commercial Nb RRR~40
+            // Kes et al. 1974, J. Low Temp. Phys. 17, 341; Townsend & Sutton 1962
             type: 'power_law',
-            a: 0.02,
+            a: 0.5,
             b: 2.5
         },
         mainFit: {
-            // k(4K)≈0.5, k(10K)≈3, k(20K)≈10, k(77K)≈35, k(300K)≈54
-            // White & Meeson, Experimental Techniques in Low-Temperature Physics
+            // Commercial Nb (RRR~40): k(4K)~10 (Padamsee: RRR/4), k(300K)~54
+            // Touloukian TPRC Vol 1; Koechlin & Bonin 1995 (SRF95F24)
+            // Note: k(T) is highly RRR-dependent below 20K
             type: 'nist_log_poly',
-            coeffs: [-0.6381, 2.1430, -1.0541, 0.3028, -0.0402, -0.0032, 0.0010, 0, 0]
+            coeffs: [-0.1200, 2.1430, -1.0541, 0.3028, -0.0402, -0.0032, 0.0010, 0, 0]
         },
-        source: 'Sub-K: Pobell, Matter and Methods at Low Temperatures. Main: White & Meeson handbook data.'
+        source: 'Sub-K: Kes et al. 1974, J. Low Temp. Phys. 17, 341; Townsend & Sutton 1962. Main: Touloukian TPRC Vol 1; Koechlin & Bonin 1995. Note: RRR~40 (commercial grade); k is highly RRR-dependent below 20K.'
     },
 
     copper_rrr50: {
