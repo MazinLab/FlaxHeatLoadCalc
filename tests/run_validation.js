@@ -42,13 +42,13 @@ const testCode = `
     console.log('');
     console.log('=== FLAX v2 Validation — Ribbon Geometry (Smith et al. 2024) ===');
     // Ribbon mode: flat foil outer, pitch=3556 µm, 2×25.4 µm foil
-    const areas = computeAreas('ribbon', 127, 203, 50.8, 3556, 25.4, 2);
+    const areas = computeAreas('ribbon', 127, 102, 50.8, 3556, 25.4, 2);
     console.log('  Inner area: ' + (areas.innerArea * 1e12).toFixed(1) + ' um^2');
     console.log('  Dielectric area: ' + (areas.dielectricArea * 1e12).toFixed(1) + ' um^2');
     console.log('  Outer area (ribbon): ' + (areas.outerArea * 1e12).toFixed(1) + ' um^2');
 
     // Compare with old coaxial model
-    const areasCoax = computeAreas('coaxial', 127, 203, 50.8, 0, 0, 0);
+    const areasCoax = computeAreas('coaxial', 127, 102, 50.8, 0, 0, 0);
     console.log('  Outer area (coaxial for comparison): ' + (areasCoax.outerArea * 1e12).toFixed(1) + ' um^2');
 
     const components = [

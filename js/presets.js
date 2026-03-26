@@ -20,7 +20,7 @@ const PRESETS = {
         dielectric: 'ptfe',
         outerConductor: 'nbti',
         innerDiameter_um: 127,
-        dielectricThickness_um: 203,
+        dielectricThickness_um: 102,
         // Coaxial outer conductor
         outerThickness_um: 50.8,
         // Ribbon outer conductor (shown when geometry === 'ribbon')
@@ -34,13 +34,13 @@ const PRESETS = {
     },
     flax_v2: {
         name: 'FLAX v2 (Smith et al. 2024)',
-        description: 'NbTi/FEP flex ribbon, 127 µm center, 203 µm dielectric, 2×25.4 µm NbTi foil, 3556 µm pitch',
+        description: 'NbTi/FEP flex ribbon, 127 µm center, 102 µm dielectric, 2×25.4 µm NbTi foil, 3556 µm pitch',
         geometry: 'ribbon',
         innerConductor: 'nbti',
         dielectric: 'ptfe',  // FEP proxied as PTFE
         outerConductor: 'nbti',
         innerDiameter_um: 127,
-        dielectricThickness_um: 203,
+        dielectricThickness_um: 102,   // PFA OD 0.013" → radial thickness (330-127)/2
         outerThickness_um: 50.8,
         tracePitch_um: 3556,       // 0.140" center-to-center
         foilThickness_um: 25.4,    // 1 mil per sheet
@@ -52,13 +52,13 @@ const PRESETS = {
     },
     flax_v1: {
         name: 'FLAX v1 (prior design)',
-        description: 'NbTi/PTFE flex ribbon, 76 µm center, 203 µm dielectric, 2×25.4 µm NbTi foil',
+        description: 'NbTi/PTFE flex ribbon, 76 µm center, 102 µm dielectric, 2×25.4 µm NbTi foil',
         geometry: 'ribbon',
         innerConductor: 'nbti',
         dielectric: 'ptfe',
         outerConductor: 'nbti',
         innerDiameter_um: 76,
-        dielectricThickness_um: 203,
+        dielectricThickness_um: 102,   // same PFA insulation thickness as v2
         outerThickness_um: 50.8,
         tracePitch_um: 3556,
         foilThickness_um: 25.4,
