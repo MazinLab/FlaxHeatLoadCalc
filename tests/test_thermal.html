@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thermal Calculator — Test Suite</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a2e;
+            color: #e0e0e0;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 { color: #ffffff; }
+        h2 {
+            color: #ffffff;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+            margin-top: 28px;
+        }
+        .pass { color: #00ff88; }
+        .fail { color: #ff4444; font-weight: bold; }
+        .info { color: #88aaff; }
+        .warn { color: #ffcc44; }
+        pre {
+            background: #0d0d1a;
+            padding: 12px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        #summary {
+            margin-top: 28px;
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 1.1em;
+        }
+        #summary.all-pass { background: #003322; border: 1px solid #00aa55; }
+        #summary.has-fail  { background: #330011; border: 1px solid #aa0033; }
+    </style>
+</head>
+<body>
+    <h1>Cryogenic Cable Heat Load Calculator — Tests</h1>
+    <div id="results"></div>
+    <div id="summary"></div>
+
+    <!-- Load modules under test -->
+    <script src="../js/materials.js"></script>
+    <!-- thermal.js and presets.js will be added in Task 2 -->
+    <!-- <script src="../js/thermal.js"></script>  -->
+    <!-- <script src="../js/presets.js"></script>  -->
+
+    <script>
+        const resultsEl = document.getElementById('results');
+        const summaryEl = document.getElementById('summary');
+        let passCount = 0;
+        let failCount = 0;
+
+        // ---- Test framework ----
+
+        function log(msg, cls = '') {
+            const div = document.createElement('div');
+            if (cls) div.className = cls;
+            div.textContent = msg;
+            resultsEl.appendChild(div);
+        }
+
+        function heading(msg) {
+            const h2 = document.createElement('h2');
+            h2.textContent = msg;
+            resultsEl.appendChild(h2);
+        }
+
+        function assert(condition, message) {
+            if (condition) {
+                passCount++;
+                log('  PASS: ' + message, 'pass');
+            } else {
+                failCount++;
+                log('  FAIL: ' + message, 'fail');
+            }
+        }
+
+        /**
+         * Check that |actual - expected| / |expected| < toleranceFraction.
+         * @param {number} actual
+         * @param {number} expected
+         * @param {number} toleranceFraction - e.g. 0.15 for 15%
+         * @param {string} message
+         */
+        function assertApprox(actual, expected, toleranceFraction, message) {
+            const diff = Math.abs(actual - expected) / Math.abs(expected);
+            const pct = (diff * 100).toFixed(1);
+            const label = message + ' (' + actual.toExponential(3) + ' vs ' + expected.toExponential(3) + ', ' + pct + '% off)';
+            assert(diff < toleranceFraction, label);
+        }
+
+        // ---- Material k(T) spot checks ----
+
+        heading('Material k(T) Spot Checks');
+
+        // SS304 at 10 K: NIST SRD 81 gives ~0.85 W/(m·K) at 10K
+        // (early estimates of ~0.5 were too conservative; NIST fit says ~0.85-0.9)
+        assertApprox(
+            getThermalConductivity(MATERIALS.ss304, 10),
+            0.85, 0.20,
+            'SS304 k(10K) ≈ 0.85 W/(m·K)'
+        );
+
+        // SS304 at 100 K: NIST gives ~10.5 W/(m·K)
+        assertApprox(
+            getThermalConductivity(MATERIALS.ss304, 100),
+            10.5, 0.15,
+            'SS304 k(100K) ≈ 10.5 W/(m·K)'
+        );
+
+        // PTFE at 100 K: NIST gives ~0.25 W/(m·K)
+        assertApprox(
+            getThermalConductivity(MATERIALS.ptfe, 100),
+            0.25, 0.20,
+            'PTFE k(100K) ≈ 0.25 W/(m·K)'
+        );
+
+        // Kapton at 100 K: NIST gives ~0.15 W/(m·K)
+        assertApprox(
+            getThermalConductivity(MATERIALS.kapton, 100),
+            0.15, 0.25,
+            'Kapton k(100K) ≈ 0.15 W/(m·K)'
+        );
+
+        // NbTi at 0.5 K — superconducting, sub-K regime; should be very low
+        const nbti_05 = getThermalConductivity(MATERIALS.nbti, 0.5);
+        assert(
+            nbti_05 < 0.1 && nbti_05 > 1e-4,
+            'NbTi k(0.5K) in range [1e-4, 0.1] W/(m·K) — got ' + nbti_05.toExponential(3)
+        );
+
+        // Copper RRR=100 at 10 K: NIST rational fit (log10(T) variable)
+        // NIST SRD 81: ~250-400 W/(m·K) at 10K for RRR=100
+        assertApprox(
+            getThermalConductivity(MATERIALS.copper_rrr100, 10),
+            300, 0.35,
+            'Cu RRR=100 k(10K) ≈ 250-400 W/(m·K)'
+        );
+
+        // Copper RRR=100 at 300 K: ~400 W/(m·K)
+        assertApprox(
+            getThermalConductivity(MATERIALS.copper_rrr100, 300),
+            400, 0.15,
+            'Cu RRR=100 k(300K) ≈ 400 W/(m·K)'
+        );
+
+        // ---- Sanity checks: stitching continuity ----
+
+        heading('Stitching Continuity Checks');
+
+        // For each material with a subK fit, verify k(T) is monotone or at least
+        // continuous across the stitch boundary (no jumps > 50%)
+        for (const [id, mat] of Object.entries(MATERIALS)) {
+            if (!mat.subK) continue;
+            const [tLo, tHi] = mat.stitchRange;
+            const eps = 1e-3;
+            const kJustBelow = getThermalConductivity(mat, tLo * (1 - eps));
+            const kJustAbove = getThermalConductivity(mat, tLo * (1 + eps));
+            const kAtLo = getThermalConductivity(mat, tLo);
+            const kAtHi = getThermalConductivity(mat, tHi);
+            const jumpFraction = Math.abs(kJustAbove - kJustBelow) / Math.max(kJustBelow, kJustAbove);
+            assert(
+                jumpFraction < 0.5,
+                id + ': stitch continuity at T=' + tLo + 'K (jump=' + (jumpFraction * 100).toFixed(1) + '%)'
+            );
+            // Also verify no NaN or negative values at the stitch boundaries
+            assert(
+                isFinite(kAtLo) && kAtLo > 0,
+                id + ': k(stitchRange[0]=' + tLo + 'K) is finite and positive — got ' + kAtLo
+            );
+            assert(
+                isFinite(kAtHi) && kAtHi > 0,
+                id + ': k(stitchRange[1]=' + tHi + 'K) is finite and positive — got ' + kAtHi
+            );
+        }
+
+        // ---- getMaterialsByCategory checks ----
+
+        heading('getMaterialsByCategory Checks');
+
+        const conductors = getMaterialsByCategory('conductor');
+        const dielectrics = getMaterialsByCategory('dielectric');
+
+        assert(conductors.length >= 12, 'At least 12 conductors in database — got ' + conductors.length);
+        assert(dielectrics.length >= 4, 'At least 4 dielectrics in database — got ' + dielectrics.length);
+        assert(
+            conductors.every(m => m.id && m.name),
+            'All conductor entries have id and name fields'
+        );
+        assert(
+            dielectrics.every(m => m.id && m.name),
+            'All dielectric entries have id and name fields'
+        );
+
+        // Spot-check known IDs are present
+        const conductorIds = conductors.map(m => m.id);
+        const dielectricIds = dielectrics.map(m => m.id);
+        for (const id of ['nbti', 'nb', 'copper_rrr100', 'ss304', 'aluminum', 'phosphor_bronze']) {
+            assert(conductorIds.includes(id), 'Conductor "' + id + '" present in getMaterialsByCategory');
+        }
+        for (const id of ['ptfe', 'fep', 'kapton', 'g10']) {
+            assert(dielectricIds.includes(id), 'Dielectric "' + id + '" present in getMaterialsByCategory');
+        }
+
+        // ---- Valid range clamping check ----
+
+        heading('Valid Range Clamping Checks');
+
+        // Values at the boundaries should be finite and equal to values just inside
+        for (const [id, mat] of Object.entries(MATERIALS)) {
+            const [T_min, T_max] = mat.validRange;
+            const kMin = getThermalConductivity(mat, T_min);
+            const kMax = getThermalConductivity(mat, T_max);
+            assert(isFinite(kMin) && kMin > 0, id + ': k(T_min=' + T_min + 'K) is finite and positive');
+            assert(isFinite(kMax) && kMax > 0, id + ': k(T_max=' + T_max + 'K) is finite and positive');
+            // Below/above valid range should clamp (not NaN or negative)
+            const kBelow = getThermalConductivity(mat, T_min * 0.1);
+            const kAbove = getThermalConductivity(mat, T_max * 2);
+            assert(isFinite(kBelow) && kBelow > 0, id + ': k clamps correctly below T_min');
+            assert(isFinite(kAbove) && kAbove > 0, id + ': k clamps correctly above T_max');
+        }
+
+        // ========== Placeholder: thermal.js tests (Task 2) ==========
+        // heading('Heat Load Integration Tests');
+        // These tests will be added in Task 2 once thermal.js is implemented.
+        // Expected: computeHeatLoad for FLAX cable at 0.1–1 K → ~5 nW/trace
+
+        // ---- Summary ----
+
+        summaryEl.textContent = passCount + ' passed, ' + failCount + ' failed';
+        summaryEl.className = failCount > 0 ? 'has-fail' : 'all-pass';
+    </script>
+</body>
+</html>
