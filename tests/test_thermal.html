@@ -47,8 +47,8 @@
 
     <!-- Load modules under test -->
     <script src="../js/materials.js"></script>
-    <!-- thermal.js and presets.js will be added in Task 2 -->
-    <!-- <script src="../js/thermal.js"></script>  -->
+    <script src="../js/thermal.js"></script>
+    <!-- presets.js will be added in Task 3 -->
     <!-- <script src="../js/presets.js"></script>  -->
 
     <script>
@@ -227,10 +227,133 @@
             assert(isFinite(kAbove) && kAbove > 0, id + ': k clamps correctly above T_max');
         }
 
-        // ========== Placeholder: thermal.js tests (Task 2) ==========
-        // heading('Heat Load Integration Tests');
-        // These tests will be added in Task 2 once thermal.js is implemented.
-        // Expected: computeHeatLoad for FLAX cable at 0.1–1 K → ~5 nW/trace
+        // ========== thermal.js tests ==========
+
+        // ---- Numerical integration ----
+
+        heading('adaptiveSimpson Integration Tests');
+
+        assertApprox(
+            adaptiveSimpson((t) => t * t, 1, 10),
+            333,
+            0.001,
+            'adaptiveSimpson: ∫₁¹⁰ T² dT = 333'
+        );
+
+        assertApprox(
+            adaptiveSimpson((_t) => 5, 100, 200),
+            500,
+            0.001,
+            'adaptiveSimpson: ∫₁₀₀²⁰⁰ 5 dT = 500'
+        );
+
+        // ---- FLAX v2 cable geometry (Smith et al. 2024) ----
+        // One trace of the FLAX v2 micro-coax, per-trace heat load at 0.1–1 K.
+        // Geometry (all dimensions in µm):
+        //   Center conductor: NbTi, d = 127 µm → r = 63.5 µm
+        //   Dielectric:       PTFE, thickness = 203 µm → r_outer = 266.5 µm
+        //   Outer conductor:  NbTi, thickness = 50.8 µm → r_outer = 317.3 µm
+        // Length: 1 foot = 0.3048 m
+
+        heading('FLAX v2 Heat Load Validation (Smith et al. 2024)');
+
+        (function () {
+            const um2_to_m2 = 1e-12;  // µm² → m²
+
+            const r_cc  = 63.5;                          // µm, center conductor outer radius
+            const r_d   = r_cc + 203;                    // µm, dielectric outer radius = 266.5
+            const r_oc  = r_d  + 50.8;                   // µm, outer conductor outer radius = 317.3
+
+            const A_cc = Math.PI * r_cc * r_cc * um2_to_m2;
+            const A_d  = Math.PI * (r_d * r_d - r_cc * r_cc) * um2_to_m2;
+            const A_oc = Math.PI * (r_oc * r_oc - r_d  * r_d ) * um2_to_m2;
+
+            log(
+                '  INFO: Center conductor area = ' + A_cc.toExponential(4) + ' m²  (' +
+                (A_cc / um2_to_m2).toFixed(1) + ' µm²)',
+                'info'
+            );
+            log(
+                '  INFO: Dielectric area       = ' + A_d.toExponential(4) + ' m²  (' +
+                (A_d / um2_to_m2).toFixed(1) + ' µm²)',
+                'info'
+            );
+            log(
+                '  INFO: Outer conductor area  = ' + A_oc.toExponential(4) + ' m²  (' +
+                (A_oc / um2_to_m2).toFixed(1) + ' µm²)',
+                'info'
+            );
+
+            const flaxComponents = [
+                { area: A_cc, material: MATERIALS.nbti },
+                { area: A_d,  material: MATERIALS.ptfe },
+                { area: A_oc, material: MATERIALS.nbti },
+            ];
+
+            const length  = 0.3048;  // m (1 foot)
+            const T_cold  = 0.1;     // K
+            const T_hot   = 1.0;     // K
+
+            const Q_W  = computeHeatLoad(flaxComponents, length, T_cold, T_hot);
+            const Q_nW = Q_W * 1e9;
+
+            log('  INFO: Computed heat load Q = ' + Q_W.toExponential(4) + ' W  = ' + Q_nW.toFixed(2) + ' nW/trace', 'info');
+            log('  INFO: Target from Smith et al. 2024: ~5 nW/trace', 'info');
+
+            // Wide tolerance (factor-of-5x each side) because material k(T) fits are approximate.
+            assertApprox(Q_nW, 5, 1.0, 'FLAX heat load ≈ 5 nW/trace (within factor of 5)');
+
+            // Sanity check: result should be in [1, 50] nW.
+            assert(Q_nW >= 1 && Q_nW <= 50, 'FLAX heat load in sanity range [1, 50] nW — got ' + Q_nW.toFixed(3) + ' nW');
+        })();
+
+        // ---- Temperature profile ----
+
+        heading('Temperature Profile Tests');
+
+        (function () {
+            const um2_to_m2 = 1e-12;
+
+            const r_cc = 63.5;
+            const r_d  = r_cc + 203;
+            const r_oc = r_d  + 50.8;
+
+            const flaxComponents = [
+                { area: Math.PI * r_cc * r_cc * um2_to_m2, material: MATERIALS.nbti },
+                { area: Math.PI * (r_d * r_d - r_cc * r_cc) * um2_to_m2, material: MATERIALS.ptfe },
+                { area: Math.PI * (r_oc * r_oc - r_d * r_d) * um2_to_m2, material: MATERIALS.nbti },
+            ];
+
+            const length = 0.3048;
+            const T_cold = 0.1;
+            const T_hot  = 1.0;
+            const nPts   = 200;
+
+            const { x, T } = computeTemperatureProfile(flaxComponents, length, T_cold, T_hot, nPts);
+
+            assert(x.length === nPts && T.length === nPts,
+                'Profile has requested ' + nPts + ' points — got x:' + x.length + ' T:' + T.length);
+
+            assertApprox(T[0], T_cold, 0.01,
+                'Profile T[0] ≈ T_cold (' + T_cold + ' K)');
+
+            assertApprox(T[nPts - 1], T_hot, 0.01,
+                'Profile T[last] ≈ T_hot (' + T_hot + ' K)');
+
+            // Monotonically non-decreasing.
+            let monotone = true;
+            for (let i = 1; i < T.length; i++) {
+                if (T[i] < T[i - 1] - 1e-12) { monotone = false; break; }
+            }
+            assert(monotone, 'Profile is monotonically non-decreasing');
+
+            // Midpoint temperature is between T_cold and T_hot.
+            const T_mid = T[Math.floor(nPts / 2)];
+            assert(T_mid > T_cold && T_mid < T_hot,
+                'Profile midpoint T=' + T_mid.toFixed(4) + ' K is between T_cold and T_hot');
+
+            log('  INFO: Profile midpoint (x=' + x[Math.floor(nPts / 2)].toFixed(4) + ' m) T=' + T_mid.toFixed(4) + ' K', 'info');
+        })();
 
         // ---- Summary ----
 
