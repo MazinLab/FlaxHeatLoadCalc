@@ -171,6 +171,15 @@
         const profile = computeTemperatureProfile(components, length, T_cold, T_hot, 200);
         renderTemperatureProfile('temp-profile-chart', profile.x, profile.T);
 
+        // Material conductivity plot
+        const conductivityColors = ['#ff9f43', '#4fc3f7', '#66bb6a'];
+        renderConductivityPlot('conductivity-chart', [
+            { material: innerMat, label: 'Inner: ' + innerMat.name, color: conductivityColors[0] },
+            { material: dielMat, label: 'Dielectric: ' + dielMat.name, color: conductivityColors[1] },
+            { material: outerMat, label: 'Outer: ' + outerMat.name, color: conductivityColors[2] }
+        ], T_cold, T_hot);
+        document.getElementById('conductivity-chart-container').style.display = '';
+
         // Show results
         resultsDisplay.className = 'results-visible';
     }
