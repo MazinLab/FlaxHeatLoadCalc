@@ -156,11 +156,11 @@
         for (const comp of componentLoads) {
             const tr = document.createElement('tr');
             const fraction = perTraceQ > 0 ? (comp.heatLoad / perTraceQ * 100) : 0;
-            const areaUm2 = comp.area * 1e12;
+            const areaMm2 = comp.area * 1e6;
             tr.innerHTML = `
                 <td>${comp.label}</td>
                 <td>${comp.material.name}</td>
-                <td>${areaUm2.toFixed(0)}</td>
+                <td>${areaMm2.toFixed(4)}</td>
                 <td>${formatHeatLoad(comp.heatLoad)}</td>
                 <td>${fraction.toFixed(1)}%</td>
             `;
