@@ -1,0 +1,384 @@
+/* ============================================================
+   Cryogenic Cable Heat Load Calculator — Dark Theme Stylesheet
+   Scientific instrument aesthetic: dark bg, accent blue, mono fonts
+   ============================================================ */
+
+:root {
+    --bg-primary:    #0f1923;
+    --bg-secondary:  #162230;
+    --bg-card:       #1a2a3a;
+    --text-primary:  #e8edf2;
+    --text-secondary:#8899aa;
+    --accent:        #4fc3f7;
+    --accent-glow:   rgba(79, 195, 247, 0.15);
+    --success:       #66bb6a;
+    --border:        #2a3a4a;
+    --input-bg:      #0d1520;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Reset ── */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ── Base ── */
+
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    line-height: 1.6;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Header ── */
+
+header {
+    text-align: center;
+    padding: 2rem 1.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    background-color: var(--bg-secondary);
+}
+
+header h1 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--text-primary);
+}
+
+header .subtitle {
+    margin-top: 0.4rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
+}
+
+/* ── Main layout ── */
+
+main {
+    max-width: 1100px;
+    width: 100%;
+    margin: 2rem auto;
+    padding: 0 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    flex: 1;
+}
+
+/* ── Input panel ── */
+
+.input-panel {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+/* Section headings inside panels */
+
+.input-panel h2,
+.results-panel h2 {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+}
+
+/* First h2 doesn't need top border/spacing */
+.input-panel h2:first-of-type {
+    margin-top: 1.25rem;
+}
+
+/* ── Form groups ── */
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    flex: 1;
+    min-width: 120px;
+}
+
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+input[type="number"],
+select {
+    background-color: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.45rem 0.6rem;
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="number"]:focus,
+select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Custom select arrow */
+select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238899aa' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.65rem center;
+    padding-right: 2rem;
+}
+
+/* Remove spinner arrows from number inputs in webkit */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    opacity: 0.4;
+}
+
+/* ── Calculate button ── */
+
+#calculate-btn {
+    display: block;
+    width: 100%;
+    margin-top: 1.5rem;
+    padding: 0.7rem 1rem;
+    background-color: var(--accent);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: 4px;
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+#calculate-btn:hover {
+    background-color: #81d4fa;
+    box-shadow: 0 0 12px var(--accent-glow);
+}
+
+#calculate-btn:active {
+    background-color: #29b6f6;
+    transform: translateY(1px);
+    box-shadow: none;
+}
+
+/* ── Results panel ── */
+
+.results-panel {
+    /* No persistent chrome — the panel content provides its own framing */
+}
+
+.results-hidden {
+    display: none;
+}
+
+.results-visible {
+    display: block;
+}
+
+/* ── Result cards ── */
+
+.result-cards {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.result-card {
+    flex: 1;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.result-card.primary {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, var(--bg-card) 60%, rgba(79, 195, 247, 0.08));
+}
+
+.result-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.result-value {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.result-card.primary .result-value {
+    color: var(--accent);
+}
+
+/* ── Breakdown section ── */
+
+.result-breakdown {
+    margin-bottom: 1.5rem;
+}
+
+.result-breakdown h3,
+.chart-container h3 {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+/* ── Breakdown table ── */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+}
+
+thead th {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    text-align: left;
+    padding: 0.45rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+    background-color: var(--bg-secondary);
+}
+
+tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background-color 0.1s ease;
+}
+
+tbody tr:last-child {
+    border-bottom: none;
+}
+
+tbody tr:hover {
+    background-color: var(--bg-card);
+}
+
+tbody td {
+    padding: 0.5rem 0.6rem;
+    color: var(--text-primary);
+    vertical-align: middle;
+}
+
+tbody td:first-child {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* ── Chart container ── */
+
+.chart-container {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1.25rem;
+}
+
+#temp-profile-chart {
+    display: block;
+    width: 100%;
+}
+
+/* ── Footer ── */
+
+footer {
+    text-align: center;
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid var(--border);
+    background-color: var(--bg-secondary);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+footer a {
+    color: var(--accent);
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+footer a:hover {
+    color: #81d4fa;
+    text-decoration: underline;
+}
+
+/* ── Responsive: collapse to single column below 900px ── */
+
+@media (max-width: 900px) {
+    main {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+@media (max-width: 500px) {
+    header h1 {
+        font-size: 1.2rem;
+    }
+
+    .result-cards {
+        flex-direction: column;
+    }
+
+    .result-value {
+        font-size: 1.2rem;
+    }
+}
