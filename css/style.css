@@ -110,7 +110,7 @@ header .subtitle {
 /* ── Main layout ── */
 
 main {
-    max-width: 1160px;
+    max-width: 1400px;
     width: 100%;
     margin: 1.75rem auto;
     padding: 0 1.5rem;
@@ -172,7 +172,7 @@ main {
     flex-direction: column;
     gap: 0.3rem;
     flex: 1;
-    min-width: 120px;
+    min-width: 150px;
 }
 
 .form-row {
