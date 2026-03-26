@@ -7,11 +7,17 @@
 
     // --- DOM references ---
     const presetSelect = document.getElementById('preset-select');
+    const geometryModeSelect = document.getElementById('geometry-mode');
     const numTracesInput = document.getElementById('num-traces');
     const cableLengthInput = document.getElementById('cable-length');
     const innerDiameterInput = document.getElementById('inner-diameter');
     const dielectricThicknessInput = document.getElementById('dielectric-thickness');
     const outerThicknessInput = document.getElementById('outer-thickness');
+    const tracePitchInput = document.getElementById('trace-pitch');
+    const foilThicknessInput = document.getElementById('foil-thickness');
+    const numFoilLayersInput = document.getElementById('num-foil-layers');
+    const coaxialFields = document.getElementById('coaxial-fields');
+    const ribbonFields = document.getElementById('ribbon-fields');
     const innerMaterialSelect = document.getElementById('inner-material');
     const dielectricMaterialSelect = document.getElementById('dielectric-material');
     const outerMaterialSelect = document.getElementById('outer-material');
@@ -22,6 +28,14 @@
     const resultTotal = document.getElementById('result-total');
     const resultPerTrace = document.getElementById('result-per-trace');
     const breakdownTbody = document.querySelector('#breakdown-table tbody');
+
+    // --- Geometry mode toggle ---
+
+    function updateGeometryFields() {
+        const mode = geometryModeSelect.value;
+        coaxialFields.style.display = mode === 'coaxial' ? '' : 'none';
+        ribbonFields.style.display = mode === 'ribbon' ? '' : 'none';
+    }
 
     // --- Populate dropdowns ---
 
@@ -52,16 +66,21 @@
     function loadPreset(presetId) {
         const preset = PRESETS[presetId];
         if (!preset) return;
+        geometryModeSelect.value = preset.geometry;
         numTracesInput.value = preset.numTraces;
         cableLengthInput.value = preset.length_m;
         innerDiameterInput.value = preset.innerDiameter_um;
         dielectricThicknessInput.value = preset.dielectricThickness_um;
         outerThicknessInput.value = preset.outerThickness_um;
+        tracePitchInput.value = preset.tracePitch_um;
+        foilThicknessInput.value = preset.foilThickness_um;
+        numFoilLayersInput.value = preset.numFoilLayers;
         innerMaterialSelect.value = preset.innerConductor;
         dielectricMaterialSelect.value = preset.dielectric;
         outerMaterialSelect.value = preset.outerConductor;
         tColdInput.value = preset.T_cold_K;
         tHotInput.value = preset.T_hot_K;
+        updateGeometryFields();
     }
 
     // --- Format heat load for display ---
@@ -78,11 +97,15 @@
     // --- Compute and display results ---
 
     function calculate() {
+        const geometry = geometryModeSelect.value;
         const numTraces = parseInt(numTracesInput.value) || 1;
         const length = parseFloat(cableLengthInput.value);
         const innerDiam = parseFloat(innerDiameterInput.value);
         const dielThick = parseFloat(dielectricThicknessInput.value);
         const outerThick = parseFloat(outerThicknessInput.value);
+        const tracePitch = parseFloat(tracePitchInput.value);
+        const foilThick = parseFloat(foilThicknessInput.value);
+        const numFoilLayers = parseInt(numFoilLayersInput.value) || 2;
         const T_cold = parseFloat(tColdInput.value);
         const T_hot = parseFloat(tHotInput.value);
 
@@ -90,8 +113,16 @@
             alert('Cold temperature must be less than hot temperature.');
             return;
         }
-        if (length <= 0 || innerDiam <= 0 || dielThick <= 0 || outerThick <= 0) {
+        if (length <= 0 || innerDiam <= 0 || dielThick <= 0) {
             alert('All dimensions must be positive.');
+            return;
+        }
+        if (geometry === 'coaxial' && outerThick <= 0) {
+            alert('Outer conductor thickness must be positive.');
+            return;
+        }
+        if (geometry === 'ribbon' && (tracePitch <= 0 || foilThick <= 0 || numFoilLayers < 1)) {
+            alert('Trace pitch, foil thickness, and number of foil layers must be positive.');
             return;
         }
 
@@ -99,7 +130,8 @@
         const dielMat = MATERIALS[dielectricMaterialSelect.value];
         const outerMat = MATERIALS[outerMaterialSelect.value];
 
-        const areas = computeAreas(innerDiam, dielThick, outerThick);
+        const areas = computeAreas(geometry, innerDiam, dielThick,
+                                   outerThick, tracePitch, foilThick, numFoilLayers);
 
         const components = [
             { material: innerMat, area: areas.innerArea, label: 'Inner Conductor' },
@@ -146,9 +178,9 @@
     // --- Event listeners ---
 
     presetSelect.addEventListener('change', () => loadPreset(presetSelect.value));
+    geometryModeSelect.addEventListener('change', updateGeometryFields);
     calculateBtn.addEventListener('click', calculate);
 
-    // Enter key triggers calculation from any input
     document.querySelectorAll('input[type="number"]').forEach(input => {
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') calculate();

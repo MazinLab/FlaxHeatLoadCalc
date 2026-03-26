@@ -28,6 +28,13 @@
             <h2>Geometry</h2>
             <div class="form-row">
                 <div class="form-group">
+                    <label for="geometry-mode">Cable Type</label>
+                    <select id="geometry-mode">
+                        <option value="coaxial">Coaxial (annular outer)</option>
+                        <option value="ribbon">Ribbon (flat foil outer)</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="num-traces">Number of Traces</label>
                     <input type="number" id="num-traces" value="1" min="1" step="1">
                 </div>
@@ -45,9 +52,27 @@
                     <label for="dielectric-thickness">Dielectric Thickness (µm)</label>
                     <input type="number" id="dielectric-thickness" value="203" min="1" step="1">
                 </div>
+            </div>
+            <!-- Coaxial outer conductor fields -->
+            <div class="form-row" id="coaxial-fields">
                 <div class="form-group">
                     <label for="outer-thickness">Outer Conductor Thickness (µm)</label>
                     <input type="number" id="outer-thickness" value="50.8" min="0.1" step="0.1">
+                </div>
+            </div>
+            <!-- Ribbon outer conductor fields -->
+            <div class="form-row" id="ribbon-fields" style="display: none;">
+                <div class="form-group">
+                    <label for="trace-pitch">Trace Pitch (µm)</label>
+                    <input type="number" id="trace-pitch" value="3556" min="1" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="foil-thickness">Foil Thickness per Sheet (µm)</label>
+                    <input type="number" id="foil-thickness" value="25.4" min="0.1" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label for="num-foil-layers">Foil Sheets</label>
+                    <input type="number" id="num-foil-layers" value="2" min="1" step="1">
                 </div>
             </div>
 

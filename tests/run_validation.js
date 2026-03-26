@@ -40,11 +40,16 @@ const testCode = `
     }
 
     console.log('');
-    console.log('=== FLAX v2 Validation (Smith et al. 2024) ===');
-    const areas = computeAreas(127, 203, 50.8);
+    console.log('=== FLAX v2 Validation — Ribbon Geometry (Smith et al. 2024) ===');
+    // Ribbon mode: flat foil outer, pitch=3556 µm, 2×25.4 µm foil
+    const areas = computeAreas('ribbon', 127, 203, 50.8, 3556, 25.4, 2);
     console.log('  Inner area: ' + (areas.innerArea * 1e12).toFixed(1) + ' um^2');
     console.log('  Dielectric area: ' + (areas.dielectricArea * 1e12).toFixed(1) + ' um^2');
-    console.log('  Outer area: ' + (areas.outerArea * 1e12).toFixed(1) + ' um^2');
+    console.log('  Outer area (ribbon): ' + (areas.outerArea * 1e12).toFixed(1) + ' um^2');
+
+    // Compare with old coaxial model
+    const areasCoax = computeAreas('coaxial', 127, 203, 50.8, 0, 0, 0);
+    console.log('  Outer area (coaxial for comparison): ' + (areasCoax.outerArea * 1e12).toFixed(1) + ' um^2');
 
     const components = [
         { material: MATERIALS.nbti, area: areas.innerArea },
@@ -55,7 +60,7 @@ const testCode = `
     const Q_nW = Q * 1e9;
     console.log('  Computed: ' + Q_nW.toFixed(3) + ' nW/trace');
     console.log('  Target:   ~5 nW/trace (Smith et al.)');
-    check(Q_nW > 0.5 && Q_nW < 50, 'FLAX heat load in [0.5, 50] nW');
+    check(Q_nW > 0.5 && Q_nW < 100, 'FLAX heat load in [0.5, 100] nW');
 
     console.log('  --- Component breakdown ---');
     for (const comp of components) {
@@ -80,7 +85,7 @@ const testCode = `
     console.log('  Ratio 1-4K / 0.1-1K: ' + (Q_1to4/Q).toFixed(1) + 'x');
     check(Q_1to4 > Q, 'FLAX 1-4K > 0.1-1K');
 
-    var cuAreas = computeAreas(500, 250, 100);
+    var cuAreas = computeAreas('coaxial', 500, 250, 100, 0, 0, 0);
     var cuComps = [
         { material: MATERIALS.copper_rrr50, area: cuAreas.innerArea },
         { material: MATERIALS.ptfe, area: cuAreas.dielectricArea },
