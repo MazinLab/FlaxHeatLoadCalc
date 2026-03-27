@@ -368,23 +368,26 @@ const MATERIALS = {
     },
 
     phosphor_bronze: {
-        name: 'Phosphor Bronze',
+        name: 'Phosphor Bronze (C51000)',
         category: 'conductor',
         superconducting: false,
         validRange: [0.1, 300],
-        stitchRange: [1.0, 4.0],
+        stitchRange: [2.0, 4.0],
         subK: {
-            // Lakeshore wire catalogue: k(1K)≈0.22 W/(m·K), roughly linear in T
+            // Wiedemann-Franz: L0/rho_0 = 2.44e-8/1.1e-7 = 0.22 W/(m·K²)
+            // Consistent with Lakeshore wire catalogue: k(1K) ≈ 0.22 W/(m·K)
             type: 'power_law',
             a: 0.22,
             b: 1.0
         },
         mainFit: {
-            // NIST Phosphor Bronze C51000
+            // Lakeshore/literature: k(4K)≈0.5, k(10K)≈3, k(20K)≈8, k(77K)≈25, k(300K)≈48
+            // Wire-grade C51000 (lower than annealed bulk ~69 W/(m·K) due to cold-work)
+            // Degree-4 log-log polynomial fit
             type: 'nist_log_poly',
-            coeffs: [-2.2680, 4.6089, -6.3553, 6.6573, -4.5900, 2.0600, -0.5765, 0.0906, -0.0060]
+            coeffs: [-1.926238, 3.082351, -0.531515, -0.21318, 0.065704, 0, 0, 0, 0]
         },
-        source: 'NIST Cryogenic Materials Database, Phosphor Bronze C51000. Sub-K: Lakeshore wire catalogue.',
+        source: 'Sub-K: Wiedemann-Franz with rho_0=1.1e-7 Ohm·m (Lakeshore). Main: Literature data, wire-grade C51000.',
         resistivity: {
             mainFit: { type: 'power_law', a: 1.1e-7, b: 0 }  // nearly constant
         }
@@ -395,19 +398,20 @@ const MATERIALS = {
         category: 'conductor',
         superconducting: false,
         validRange: [0.05, 300],
-        stitchRange: [1.0, 4.0],
+        stitchRange: [3.0, 4.0],
         subK: {
-            // k = 0.079 * T^1.22 W/(m·K) from literature (0.05–1 K)
+            // Pobell et al. 1999 (Nucl. Phys. B 78:573): k = 0.079 * T^1.22, 0.05–1 K
             type: 'power_law',
             a: 0.079,
             b: 1.22
         },
         mainFit: {
             // Lakeshore data: k(4K)≈0.5, k(10K)≈2, k(20K)≈3.3, k(80K)≈13, k(300K)≈22
+            // Degree-4 log-log polynomial fit to these 5 data points
             type: 'nist_log_poly',
-            coeffs: [-2.6395, 3.8421, -3.0940, 1.8578, -0.7279, 0.1756, -0.0216, 0, 0]
+            coeffs: [-4.052022, 11.413457, -11.477502, 5.289629, -0.872532, 0, 0, 0, 0]
         },
-        source: 'Sub-K: Literature power-law fit. Main: Lakeshore wire catalogue data.',
+        source: 'Sub-K: Pobell et al. 1999, Nucl. Phys. B Proc. Suppl. 78, 573. Main: Lakeshore wire catalogue data.',
         resistivity: {
             mainFit: { type: 'power_law', a: 4.3e-7, b: 0 }  // nearly constant
         }
@@ -432,7 +436,71 @@ const MATERIALS = {
         },
         source: 'Main: arXiv:2502.01945 (SC-086 coax study). Sub-K: CERN Constantan approx.',
         resistivity: {
-            mainFit: { type: 'power_law', a: 3.5e-7, b: 0 }  // nearly constant
+            // RRR ≈ 1.8 from Coax Co. SC-086/50-CN-CN datasheet (24.3→18.1 dB/m at 10 GHz)
+            subK: { type: 'power_law', a: 1.93e-7, b: 0 },    // residual rho at T < 10K
+            mainFit: { type: 'power_law', a: 3.5e-7, b: 0 },   // room-temp rho
+            stitchRange: [10, 100]
+        }
+    },
+
+    cuni_maybell: {
+        name: 'CuNi (Maybell)',
+        category: 'conductor',
+        superconducting: false,
+        validRange: [0.1, 300],
+        stitchRange: [2.0, 4.0],
+        subK: {
+            // Wiedemann-Franz: L0/rho_0 = 2.44e-8/6.24e-7 = 0.039 W/(m·K²)
+            type: 'power_law',
+            a: 0.039,
+            b: 1.0
+        },
+        mainFit: {
+            // Using Coax Co. C7150 k(T) shape scaled — higher rho alloy but
+            // similar phonon spectrum. Adequate for heat load estimates.
+            type: 'nist_log_poly',
+            coeffs: [-3.198, 20.499, -66.114, 117.690, -121.477, 76.215, -28.749, 5.985, -0.527]
+        },
+        source: 'Resistivity fitted to Mazin lab FLAX-style CuNi/CuNi cable measurements. k(T) shape from arXiv:2502.01945.',
+        resistivity: {
+            // Fitted from measured S21: -15 dB at 4 GHz (290K), -12 dB at 4 GHz (4K)
+            // rho(290K) = 1.01e-6, rho(4K) = 6.24e-7, RRR ≈ 1.6
+            // Note: effective rho absorbs coaxial-model approximation for ribbon geometry
+            subK: { type: 'power_law', a: 6.24e-7, b: 0 },
+            mainFit: { type: 'power_law', a: 1.01e-6, b: 0 },
+            stitchRange: [10, 100]
+        }
+    },
+
+    cuni_ag: {
+        name: 'Silver-Plated CuNi',
+        category: 'conductor',
+        superconducting: false,
+        validRange: [0.1, 300],
+        stitchRange: [2.0, 4.0],
+        subK: {
+            // Bulk CuNi contribution: same as bare cuni
+            // Silver plating thermal contribution handled via bilayer model
+            type: 'power_law',
+            a: 0.10,
+            b: 1.1
+        },
+        mainFit: {
+            // Same as cuni for bulk thermal conductivity
+            type: 'nist_log_poly',
+            coeffs: [-3.198, 20.499, -66.114, 117.690, -121.477, 76.215, -28.749, 5.985, -0.527]
+        },
+        source: 'CuNi C7150 + Ag plating bilayer. arXiv:2502.01945.',
+        baseMaterial: 'cuni',
+        plating: {
+            material: 'silver',
+            defaultThickness_um: 3.0
+        },
+        resistivity: {
+            // Silver RRR≈20 (electroplated): rho_0=8e-10, rho(300K)=1.6e-8
+            subK: { type: 'power_law', a: 8e-10, b: 0 },
+            mainFit: { type: 'power_law', a: 1.6e-8, b: 0 },
+            stitchRange: [10, 100]
         }
     },
 
@@ -443,9 +511,10 @@ const MATERIALS = {
         validRange: [0.1, 300],
         stitchRange: [1.0, 4.0],
         subK: {
-            // CERN table: k(1K)≈0.06 W/(m·K), approximately linear in T
+            // Wiedemann-Franz: L0/rho_0 = 2.44e-8 / 2.2e-7 = 0.111 W/(m·K²)
+            // Consistent with resistivity RRR≈3.3 from Coax Co. SC-219 datasheet
             type: 'power_law',
-            a: 0.06,
+            a: 0.111,
             b: 1.0
         },
         mainFit: {
@@ -455,20 +524,53 @@ const MATERIALS = {
         },
         source: 'NIST Cryogenic Materials Database, 304 Stainless Steel.',
         resistivity: {
-            mainFit: { type: 'power_law', a: 7.2e-7, b: 0 }  // approximately constant
+            // RRR ≈ 3.3: rho drops from ~7.2e-7 at 300K to ~2.2e-7 at 4K
+            // Fitted to Coax Co. SC-219/50-SSS-SS 300K/4K attenuation ratio
+            subK: { type: 'power_law', a: 2.2e-7, b: 0 },     // residual rho
+            mainFit: { type: 'power_law', a: 7.2e-7, b: 0 },   // room-temp rho
+            stitchRange: [10, 100]
+        }
+    },
+
+    silver: {
+        name: 'Silver (Ag, RRR≈20)',
+        category: 'conductor',
+        superconducting: false,
+        validRange: [0.1, 300],
+        stitchRange: [2.0, 4.0],
+        subK: {
+            // Wiedemann-Franz: rho_0 = 1.59e-8/20 = 7.95e-10 Ohm·m → k = 30.7*T
+            // RRR≈20 typical for electroplated silver (Kuroda et al. 2018)
+            type: 'power_law',
+            a: 30.7,
+            b: 1.0
+        },
+        mainFit: {
+            // Fit to Smith & Fickett 1995 RRR≈20-30 data (TPRC Vol 1)
+            // k(4K)≈100, k(20K)≈400, k(77K)≈435, k(200K)≈428, k(300K)≈427
+            type: 'nist_log_poly',
+            coeffs: [0.093786, 4.89597, -3.481567, 1.08633, -0.125891, 0, 0, 0, 0]
+        },
+        source: 'Smith & Fickett 1995, J. Res. NIST 100(2). Sub-K: Wiedemann-Franz, RRR≈20 (electroplated).',
+        resistivity: {
+            subK: { type: 'power_law', a: 8e-10, b: 0 },       // residual rho, RRR≈20
+            mainFit: { type: 'power_law', a: 1.6e-8, b: 0 },    // rho(300K)
+            stitchRange: [10, 100]
         }
     },
 
     ss304_ag: {
-        name: 'Silver-Plated 304 Stainless Steel',
+        name: 'Silver-Plated 304 SS',
         category: 'conductor',
         superconducting: false,
         validRange: [0.1, 300],
         stitchRange: [1.0, 4.0],
         subK: {
-            // Same as SS304: thin Ag plating does not significantly change bulk k
+            // Bulk SS304 contribution: Wiedemann-Franz L0/rho_0 = 0.111 W/(m·K²)
+            // Silver plating thermal contribution handled as a separate parallel
+            // component via the bilayer model (see plating field below)
             type: 'power_law',
-            a: 0.06,
+            a: 0.111,
             b: 1.0
         },
         mainFit: {
@@ -476,10 +578,49 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [-1.4087, 1.3982, 0.2543, -0.6260, 0.2334, 0.4256, -0.4658, 0.1650, -0.0199]
         },
-        source: 'NIST 304 SS. Note: thin Ag plating improves electrical contact but does not significantly change bulk thermal conductivity.',
+        source: 'NIST 304 SS + Ag plating bilayer. Kuroda et al. 2018, J. Low Temp. Phys. 193, 611.',
+        // Bilayer model: silver plating treated as a separate parallel thermal path
+        baseMaterial: 'ss304',
+        plating: {
+            material: 'silver',
+            defaultThickness_um: 3.0   // µm, typical for semi-rigid coax (Kuroda et al. 2018)
+        },
         // For RF, skin depth at GHz is ~1 µm, well within Ag plating — use silver resistivity.
         resistivity: {
-            mainFit: { type: 'power_law', a: 1.6e-8, b: 0 }  // silver, rho(300K)
+            subK: { type: 'power_law', a: 8e-10, b: 0 },
+            mainFit: { type: 'power_law', a: 1.6e-8, b: 0 },
+            stitchRange: [10, 100]
+        }
+    },
+
+    phosphor_bronze_ag: {
+        name: 'Silver-Plated Phosphor Bronze',
+        category: 'conductor',
+        superconducting: false,
+        validRange: [0.1, 300],
+        stitchRange: [2.0, 4.0],
+        subK: {
+            // Bulk PhBr contribution: Wiedemann-Franz L0/rho_0 = 0.22 W/(m·K²)
+            // Silver plating thermal contribution handled via bilayer model
+            type: 'power_law',
+            a: 0.22,
+            b: 1.0
+        },
+        mainFit: {
+            // Same as phosphor_bronze for bulk thermal conductivity
+            type: 'nist_log_poly',
+            coeffs: [-1.926238, 3.082351, -0.531515, -0.21318, 0.065704, 0, 0, 0, 0]
+        },
+        source: 'Phosphor Bronze C51000 + Ag plating bilayer.',
+        baseMaterial: 'phosphor_bronze',
+        plating: {
+            material: 'silver',
+            defaultThickness_um: 3.0
+        },
+        resistivity: {
+            subK: { type: 'power_law', a: 8e-10, b: 0 },
+            mainFit: { type: 'power_law', a: 1.6e-8, b: 0 },
+            stitchRange: [10, 100]
         }
     },
 
@@ -488,7 +629,7 @@ const MATERIALS = {
         category: 'conductor',
         superconducting: false,
         validRange: [0.5, 300],
-        stitchRange: [2.0, 5.0],
+        stitchRange: [3.0, 5.0],
         subK: {
             // Sparse literature: k ≈ 0.07*T^1.3 W/(m·K) below ~2 K
             type: 'power_law',
@@ -497,8 +638,9 @@ const MATERIALS = {
         },
         mainFit: {
             // Lakeshore: k(4K)≈0.25, k(10K)≈0.7, k(20K)≈2.6, k(80K)≈8, k(300K)≈12
+            // Degree-4 log-log polynomial fit to these 5 data points
             type: 'nist_log_poly',
-            coeffs: [-2.5200, 3.3100, -2.4500, 1.3200, -0.4800, 0.1050, -0.0120, 0, 0]
+            coeffs: [2.587817, -12.583101, 16.253085, -7.633205, 1.220501, 0, 0, 0, 0]
         },
         source: 'Lakeshore wire catalogue data.',
         resistivity: {
@@ -517,11 +659,12 @@ const MATERIALS = {
         validRange: [0.1, 300],
         stitchRange: [2.0, 5.0],
         subK: {
-            // Kushino et al. 2005, Cryogenics 45(9): approximate from 0.3–4.5 K data
-            // k ~ 2.5e-3 * T^1.1 W/(m·K) below ~2 K
+            // Kushino et al. 2005, Cryogenics 45(9): A=19.9 µW/(cm·K^(B+1)), B=1.9
+            // k = 1.99e-3 * T^1.9 W/(m·K), valid 0.3–4.5 K
+            // Confirmed by Daal et al. 2017 (Cryogenics 85): ~T^2 dependence at sub-K
             type: 'power_law',
-            a: 2.5e-3,
-            b: 1.1
+            a: 2.0e-3,
+            b: 1.9
         },
         mainFit: {
             // NIST Teflon (PTFE)
@@ -541,9 +684,10 @@ const MATERIALS = {
         stitchRange: [2.0, 5.0],
         subK: {
             // FEP cryogenic k(T) not well documented; PTFE used as proxy per Smith et al. 2024
+            // Same as PTFE: Kushino et al. 2005, k = 2.0e-3 * T^1.9
             type: 'power_law',
-            a: 2.5e-3,
-            b: 1.1
+            a: 2.0e-3,
+            b: 1.9
         },
         mainFit: {
             // Same as PTFE per Smith et al. 2024 (IEEE TAS) approach
@@ -562,11 +706,11 @@ const MATERIALS = {
         validRange: [0.05, 300],
         stitchRange: [2.0, 5.0],
         subK: {
-            // Approximate from Daal et al. 2019: k ≈ 0.19 * T^0.47 W/(m·K)
-            // (Daal gives linear-in-log10(T) formula for mW/(m·K); power law is a good fit)
-            type: 'power_law',
-            a: 0.19,
-            b: 0.47
+            // Daal et al. 2019, Cryogenics 98, Table 2 (Cirlex polyimide, 0.05–1.4 K)
+            // log10(k [W/(m·K)]) = -2.33 + 0.544*log10(T) - 0.436*log10(T)^2 + 0.0754*log10(T)^3
+            // Confirmed by Barucci et al. 2000: k(1K) = 4.6 mW/(m·K) for Kapton HN
+            type: 'log_poly',
+            coeffs: [-2.33, 0.544, -0.436, 0.0754]
         },
         mainFit: {
             // NIST Polyimide/Kapton

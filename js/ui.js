@@ -21,6 +21,8 @@
     const innerMaterialSelect = document.getElementById('inner-material');
     const dielectricMaterialSelect = document.getElementById('dielectric-material');
     const outerMaterialSelect = document.getElementById('outer-material');
+    const platingThicknessInput = document.getElementById('plating-thickness');
+    const platingFields = document.getElementById('plating-fields');
     const tColdInput = document.getElementById('t-cold');
     const tHotInput = document.getElementById('t-hot');
     const calculateBtn = document.getElementById('calculate-btn');
@@ -35,6 +37,16 @@
         const mode = geometryModeSelect.value;
         coaxialFields.style.display = mode === 'coaxial' ? '' : 'none';
         ribbonFields.style.display = mode === 'ribbon' ? '' : 'none';
+    }
+
+    // --- Plating visibility ---
+
+    function updatePlatingFields() {
+        const anyPlated = [innerMaterialSelect, outerMaterialSelect].some(sel => {
+            const mat = MATERIALS[sel.value];
+            return mat && mat.plating;
+        });
+        platingFields.style.display = anyPlated ? '' : 'none';
     }
 
     // --- Populate dropdowns ---
@@ -80,7 +92,11 @@
         outerMaterialSelect.value = preset.outerConductor;
         tColdInput.value = preset.T_cold_K;
         tHotInput.value = preset.T_hot_K;
+        if (preset.platingThickness_um !== undefined) {
+            platingThicknessInput.value = preset.platingThickness_um;
+        }
         updateGeometryFields();
+        updatePlatingFields();
     }
 
     // --- Format heat load for display ---
@@ -129,15 +145,49 @@
         const innerMat = MATERIALS[innerMaterialSelect.value];
         const dielMat = MATERIALS[dielectricMaterialSelect.value];
         const outerMat = MATERIALS[outerMaterialSelect.value];
+        const platingThick_um = parseFloat(platingThicknessInput.value) || 3.0;
 
         const areas = computeAreas(geometry, innerDiam, dielThick,
                                    outerThick, tracePitch, foilThick, numFoilLayers);
 
-        const components = [
+        const rawComponents = [
             { material: innerMat, area: areas.innerArea, label: 'Inner Conductor' },
             { material: dielMat, area: areas.dielectricArea, label: 'Dielectric' },
             { material: outerMat, area: areas.outerArea, label: 'Outer Conductor' }
         ];
+
+        // Expand plated materials into base + plating parallel components
+        const components = [];
+        for (const comp of rawComponents) {
+            if (!comp.material.plating) {
+                components.push(comp);
+                continue;
+            }
+            const platingMat = MATERIALS[comp.material.plating.material];
+            const baseMat = MATERIALS[comp.material.baseMaterial];
+            const t_p = platingThick_um * 1e-6; // µm → m
+
+            // Compute plating cross-section area from geometry
+            let platingArea = 0;
+            if (comp.label === 'Inner Conductor') {
+                // Solid circle: plating on outer surface
+                const r = Math.sqrt(comp.area / Math.PI);
+                platingArea = 2 * Math.PI * r * t_p;
+            } else if (comp.label === 'Outer Conductor' && geometry === 'coaxial') {
+                // Annulus: plating on inner and outer surfaces
+                const r_inner = (innerDiam / 2 + dielThick) * 1e-6;
+                const r_outer = r_inner + outerThick * 1e-6;
+                platingArea = 2 * Math.PI * (r_inner + r_outer) * t_p;
+            } else if (comp.label === 'Outer Conductor' && geometry === 'ribbon') {
+                // Ribbon: plating on both faces of each foil layer
+                const pitch_m = tracePitch * 1e-6;
+                platingArea = 2 * pitch_m * t_p * numFoilLayers;
+            }
+
+            const baseArea = Math.max(0, comp.area - platingArea);
+            components.push({ material: baseMat, area: baseArea, label: comp.label + ' (base)' });
+            components.push({ material: platingMat, area: platingArea, label: comp.label + ' (Ag)' });
+        }
 
         const perTraceQ = computeHeatLoad(components, length, T_cold, T_hot);
         const totalQ = perTraceQ * numTraces;
@@ -171,13 +221,20 @@
         const profile = computeTemperatureProfile(components, length, T_cold, T_hot, 200);
         renderTemperatureProfile('temp-profile-chart', profile.x, profile.T);
 
-        // Material conductivity plot
-        const conductivityColors = ['#ff9f43', '#4fc3f7', '#66bb6a'];
-        const plotMaterials = [
-            { material: innerMat, label: 'Inner: ' + innerMat.name, color: conductivityColors[0] },
-            { material: dielMat, label: 'Dielectric: ' + dielMat.name, color: conductivityColors[1] },
-            { material: outerMat, label: 'Outer: ' + outerMat.name, color: conductivityColors[2] }
-        ];
+        // Material conductivity plot — show unique materials including any plating
+        const conductivityColors = ['#ff9f43', '#4fc3f7', '#66bb6a', '#ef5350', '#ab47bc'];
+        const plotMaterials = [];
+        const seenMats = new Set();
+        for (const comp of components) {
+            if (!seenMats.has(comp.material.name)) {
+                seenMats.add(comp.material.name);
+                plotMaterials.push({
+                    material: comp.material,
+                    label: comp.material.name,
+                    color: conductivityColors[plotMaterials.length % conductivityColors.length]
+                });
+            }
+        }
         renderConductivityPlot('conductivity-chart', plotMaterials, T_cold, T_hot);
         document.getElementById('conductivity-chart-container').style.display = '';
 
@@ -262,6 +319,8 @@
 
     presetSelect.addEventListener('change', () => loadPreset(presetSelect.value));
     geometryModeSelect.addEventListener('change', updateGeometryFields);
+    innerMaterialSelect.addEventListener('change', updatePlatingFields);
+    outerMaterialSelect.addEventListener('change', updatePlatingFields);
     calculateBtn.addEventListener('click', calculate);
 
     document.querySelectorAll('input[type="number"]').forEach(input => {
@@ -277,4 +336,5 @@
     populateMaterialSelect(dielectricMaterialSelect, 'dielectric', 'ptfe');
     populateMaterialSelect(outerMaterialSelect, 'conductor', 'nbti');
     loadPreset('flax_v2');
+    updatePlatingFields();
 })();

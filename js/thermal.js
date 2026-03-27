@@ -123,7 +123,7 @@ function computeHeatLoad(components, length, T_cold, T_hot) {
  * Compute the steady-state temperature profile T(x) along the cable.
  *
  * The approach is to parameterize position by fractional coordinate s = x/L.
- * From the constant-flux condition Q = G(T(x)) · dT/dx · (1/L):
+ * From the constant-flux condition |Q| = G(T) · dT/dx (heat flows cold→hot):
  *
  *   ds/dT = G(T) / (Q · L)
  *

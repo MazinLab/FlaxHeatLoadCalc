@@ -65,8 +65,10 @@ function materialSurfaceResistance(material, T, f) {
 
 /**
  * Conductor attenuation at a single point along the cable.
- * Handles different inner/outer conductor materials:
- *   alpha_c = (Rs_inner/a + Rs_outer/b) / (2 * Z0 * ln(b/a))
+ * Handles different inner/outer conductor materials.
+ *
+ * Pozar, Microwave Engineering 4th ed., eq. 2.163:
+ *   alpha_c = (Rs_inner/a + Rs_outer/b) / (4 * pi * Z0)
  *
  * @param {number} f - Frequency [Hz]
  * @param {number} T - Temperature [K]
@@ -79,7 +81,7 @@ function materialSurfaceResistance(material, T, f) {
 function conductorLossAtPoint(f, T, innerMat, outerMat, a, b) {
     const Rs_inner = materialSurfaceResistance(innerMat, T, f);
     const Rs_outer = materialSurfaceResistance(outerMat, T, f);
-    return (Rs_inner / a + Rs_outer / b) / (2 * Z0_COAX * Math.log(b / a));
+    return (Rs_inner / a + Rs_outer / b) / (4 * Math.PI * Z0_COAX);
 }
 
 /**
@@ -104,7 +106,8 @@ function computeS21(profile, innerMat, outerMat, dielMat, a, b, frequencies) {
     const n = x.length;
     const epsilon_r = dielMat.epsilon_r;
     const tanDelta = dielMat.tanDelta;
-    const lnBA = Math.log(b / a);
+    // Denominator for conductor loss: 4*pi*Z0 (Pozar eq. 2.163)
+    const condDenom = 4 * Math.PI * Z0_COAX;
 
     const s21_total = [];
     const s21_inner = [];
@@ -124,15 +127,15 @@ function computeS21(profile, innerMat, outerMat, dielMat, a, b, frequencies) {
             // Inner conductor loss
             const Rs_in_i = materialSurfaceResistance(innerMat, T[i], f);
             const Rs_in_next = materialSurfaceResistance(innerMat, T[i + 1], f);
-            const alpha_in_i = Rs_in_i / (a * 2 * Z0_COAX * lnBA);
-            const alpha_in_next = Rs_in_next / (a * 2 * Z0_COAX * lnBA);
+            const alpha_in_i = Rs_in_i / (a * condDenom);
+            const alpha_in_next = Rs_in_next / (a * condDenom);
             integralInner += 0.5 * (alpha_in_i + alpha_in_next) * dx;
 
             // Outer conductor loss
             const Rs_out_i = materialSurfaceResistance(outerMat, T[i], f);
             const Rs_out_next = materialSurfaceResistance(outerMat, T[i + 1], f);
-            const alpha_out_i = Rs_out_i / (b * 2 * Z0_COAX * lnBA);
-            const alpha_out_next = Rs_out_next / (b * 2 * Z0_COAX * lnBA);
+            const alpha_out_i = Rs_out_i / (b * condDenom);
+            const alpha_out_next = Rs_out_next / (b * condDenom);
             integralOuter += 0.5 * (alpha_out_i + alpha_out_next) * dx;
 
             integralDielectric += alpha_d * dx;

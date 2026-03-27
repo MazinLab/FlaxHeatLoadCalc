@@ -99,6 +99,86 @@ const testCode = `
     console.log('  Cu coax 4-300K: ' + (Q_cu*1e3).toFixed(2) + ' mW');
     check(Q_cu > 1e-3, 'Cu coax 4-300K > 1 mW');
 
+    // ========== Corrected Material Spot Checks ==========
+    console.log('');
+    console.log('=== Corrected Material Spot Checks ===');
+
+    // Kapton sub-K: Daal et al. 2019 Cirlex — k(1K) ≈ 4.7 mW/(m·K)
+    var k_kap_1K = getThermalConductivity(MATERIALS.kapton, 1.0);
+    check(k_kap_1K > 0.003 && k_kap_1K < 0.010,
+        'Kapton k(1K) = ' + (k_kap_1K*1e3).toFixed(2) + ' mW (expect ~4.7 mW)');
+
+    // PTFE sub-K: Kushino T^1.9 — k(0.1K) should be ~0.025 mW, not ~0.2 mW
+    var k_ptfe_01 = getThermalConductivity(MATERIALS.ptfe, 0.1);
+    check(k_ptfe_01 > 1e-5 && k_ptfe_01 < 1e-4,
+        'PTFE k(0.1K) = ' + k_ptfe_01.toExponential(2) + ' (expect ~2.5e-5)');
+
+    // Manganin main fit: k(300K) ≈ 22 W/(m·K), k(10K) ≈ 2
+    var k_mang_300 = getThermalConductivity(MATERIALS.manganin, 300);
+    check(k_mang_300 > 15 && k_mang_300 < 30,
+        'Manganin k(300K) = ' + k_mang_300.toFixed(1) + ' (expect ~22)');
+    var k_mang_10 = getThermalConductivity(MATERIALS.manganin, 10);
+    check(k_mang_10 > 1.0 && k_mang_10 < 4.0,
+        'Manganin k(10K) = ' + k_mang_10.toFixed(2) + ' (expect ~2)');
+
+    // Nichrome main fit: k(300K) ≈ 12, k(10K) ≈ 0.7
+    var k_nich_300 = getThermalConductivity(MATERIALS.nichrome, 300);
+    check(k_nich_300 > 8 && k_nich_300 < 18,
+        'Nichrome k(300K) = ' + k_nich_300.toFixed(1) + ' (expect ~12)');
+
+    // Phosphor Bronze: k(300K) ≈ 48
+    var k_phbr_300 = getThermalConductivity(MATERIALS.phosphor_bronze, 300);
+    check(k_phbr_300 > 30 && k_phbr_300 < 70,
+        'Phosphor Bronze k(300K) = ' + k_phbr_300.toFixed(1) + ' (expect ~48)');
+
+    // SS304 sub-K: W-F with rho_0=2.2e-7 → k=0.111*T
+    var k_ss_05 = getThermalConductivity(MATERIALS.ss304, 0.5);
+    check(k_ss_05 > 0.040 && k_ss_05 < 0.080,
+        'SS304 k(0.5K) = ' + (k_ss_05*1e3).toFixed(1) + ' mW (expect ~55 mW)');
+
+    // Silver: k(1K) ≈ 30.7 (WF, RRR=20), k(300K) ≈ 427
+    var k_ag_1 = getThermalConductivity(MATERIALS.silver, 1.0);
+    check(k_ag_1 > 20 && k_ag_1 < 50,
+        'Silver k(1K) = ' + k_ag_1.toFixed(1) + ' (expect ~30.7, WF RRR=20)');
+    var k_ag_300 = getThermalConductivity(MATERIALS.silver, 300);
+    check(k_ag_300 > 350 && k_ag_300 < 500,
+        'Silver k(300K) = ' + k_ag_300.toFixed(1) + ' (expect ~427)');
+
+    // ========== Silver Plating Bilayer Test ==========
+    console.log('');
+    console.log('=== Silver Plating Bilayer Test ===');
+    // Compare SS304 vs SS304+Ag for a coaxial outer conductor
+    // Geometry: 500 µm ID, 250 µm dielectric, 100 µm outer wall
+    var bilayerAreas = computeAreas('coaxial', 500, 250, 100, 0, 0, 0);
+    // Bare SS304 heat load (4-300K)
+    var ssComp = [{ material: MATERIALS.ss304, area: bilayerAreas.outerArea }];
+    var Q_bare = computeHeatLoad(ssComp, 0.3048, 4, 300);
+
+    // SS304 + 3 µm Ag plating on inner+outer surfaces
+    var r_inner = (250 + 250) * 1e-6;  // inner radius of outer conductor
+    var r_outer = r_inner + 100 * 1e-6;
+    var t_p = 3e-6;
+    var platingArea = 2 * Math.PI * (r_inner + r_outer) * t_p;
+    var baseArea = Math.max(0, bilayerAreas.outerArea - platingArea);
+    var platedComps = [
+        { material: MATERIALS.ss304, area: baseArea },
+        { material: MATERIALS.silver, area: platingArea }
+    ];
+    // 4-300K: silver plating adds significant but not dominant contribution
+    var Q_plated = computeHeatLoad(platedComps, 0.3048, 4, 300);
+    var ratio_warm = Q_plated / Q_bare;
+    console.log('  4-300K: bare=' + (Q_bare*1e6).toFixed(1) + ' µW, plated=' + (Q_plated*1e6).toFixed(1) + ' µW, ratio=' + ratio_warm.toFixed(1) + 'x');
+    check(ratio_warm > 2 && ratio_warm < 10,
+        'Ag plating at 4-300K: ' + ratio_warm.toFixed(1) + 'x (expect 2-10x)');
+
+    // 0.5-4K: silver plating dominates because k_Ag/k_SS ≈ 900
+    var Q_bare_cold = computeHeatLoad(ssComp, 0.3048, 0.5, 4);
+    var Q_plated_cold = computeHeatLoad(platedComps, 0.3048, 0.5, 4);
+    var ratio_cold = Q_plated_cold / Q_bare_cold;
+    console.log('  0.5-4K: bare=' + (Q_bare_cold*1e9).toFixed(1) + ' nW, plated=' + (Q_plated_cold*1e9).toFixed(1) + ' nW, ratio=' + ratio_cold.toFixed(1) + 'x');
+    check(ratio_cold > 10 && ratio_cold < 100,
+        'Ag plating at 0.5-4K: ' + ratio_cold.toFixed(1) + 'x (expect 10-100x, Kuroda 2018: ~10x)');
+
     // ========== RF Cable Loss Tests ==========
     console.log('');
     console.log('=== RF Cable Loss (S21) Tests ===');
@@ -161,6 +241,55 @@ const testCode = `
     var idx8ghz = Math.round((8 - 1) / (18 - 1) * 49);
     console.log('  FLAX v2 S21 at 8 GHz (dielectric only, 30cm): ' + s21.s21_total[idx8ghz].toFixed(3) + ' dB');
     console.log('  Smith et al. measured: ~-1.5 dB at 8 GHz');
+
+    // SC-219/50-SSS-SS attenuation vs datasheet (Coax Co. Ltd.)
+    // Uniform 300K, 1 m cable — compare to datasheet dB/m
+    console.log('');
+    console.log('=== SC-219/50-SSS-SS Attenuation vs Datasheet ===');
+    var sc219_a = 255e-6;
+    var sc219_b = sc219_a + 580e-6;
+    // Uniform 300K profile (2 points)
+    var sc219_prof = { x: [0, 1.0], T: [300, 300] };
+    var sc219_freqs = [0.5e9, 1e9, 5e9, 10e9, 20e9];
+    var sc219_s21 = computeS21(sc219_prof, MATERIALS.ss304_ag, MATERIALS.ss304, MATERIALS.ptfe, sc219_a, sc219_b, sc219_freqs);
+    var sc219_sheet = [1.0, 1.5, 3.3, 4.6, 6.5];  // dB/m at 300K
+    var sc219_labels = ['0.5', '1', '5', '10', '20'];
+    var sc219_prof_4 = { x: [0, 1.0], T: [4, 4] };
+    var sc219_s21_4 = computeS21(sc219_prof_4, MATERIALS.ss304_ag, MATERIALS.ss304, MATERIALS.ptfe, sc219_a, sc219_b, sc219_freqs);
+    var sc219_sheet_4 = [0.5, 0.7, 1.5, 2.1, 2.9];
+    for (var si = 0; si < sc219_freqs.length; si++) {
+        var p300 = Math.abs(sc219_s21.s21_total[si]);
+        var p4 = Math.abs(sc219_s21_4.s21_total[si]);
+        var e300 = Math.abs(p300 - sc219_sheet[si]) / sc219_sheet[si];
+        var e4 = Math.abs(p4 - sc219_sheet_4[si]) / sc219_sheet_4[si];
+        console.log('  ' + sc219_labels[si] + ' GHz: 300K=' + p300.toFixed(2) + ' vs ' + sc219_sheet[si] + ', 4K=' + p4.toFixed(2) + ' vs ' + sc219_sheet_4[si]);
+        check(e300 < 0.25, 'SC-219 ' + sc219_labels[si] + ' GHz 300K: ' + (e300*100).toFixed(0) + '% off');
+        check(e4 < 0.25, 'SC-219 ' + sc219_labels[si] + ' GHz 4K: ' + (e4*100).toFixed(0) + '% off');
+    }
+
+    // SC-086/50-CN-CN attenuation vs datasheet (bare CuNi both)
+    console.log('');
+    console.log('=== SC-086/50-CN-CN Attenuation vs Datasheet ===');
+    var sc086_a = 101.5e-6;
+    var sc086_b = sc086_a + 228.5e-6;
+    // Uniform 300K and 4K profiles
+    var sc086_prof_300 = { x: [0, 1.0], T: [300, 300] };
+    var sc086_prof_4 = { x: [0, 1.0], T: [4, 4] };
+    var sc086_freqs = [0.5e9, 1e9, 5e9, 10e9, 20e9];
+    var sc086_s21_300 = computeS21(sc086_prof_300, MATERIALS.cuni, MATERIALS.cuni, MATERIALS.ptfe, sc086_a, sc086_b, sc086_freqs);
+    var sc086_s21_4 = computeS21(sc086_prof_4, MATERIALS.cuni, MATERIALS.cuni, MATERIALS.ptfe, sc086_a, sc086_b, sc086_freqs);
+    var sc086_sheet_300 = [5.4, 7.7, 17.1, 24.3, 34.6];
+    var sc086_sheet_4 = [4.1, 5.7, 12.8, 18.1, 25.7];
+    var sc086_labels = ['0.5', '1', '5', '10', '20'];
+    for (var ci = 0; ci < sc086_freqs.length; ci++) {
+        var p300 = Math.abs(sc086_s21_300.s21_total[ci]);
+        var p4 = Math.abs(sc086_s21_4.s21_total[ci]);
+        var e300 = Math.abs(p300 - sc086_sheet_300[ci]) / sc086_sheet_300[ci];
+        var e4 = Math.abs(p4 - sc086_sheet_4[ci]) / sc086_sheet_4[ci];
+        console.log('  ' + sc086_labels[ci] + ' GHz: 300K=' + p300.toFixed(1) + ' vs ' + sc086_sheet_300[ci] + ', 4K=' + p4.toFixed(1) + ' vs ' + sc086_sheet_4[ci]);
+        check(e300 < 0.20, 'SC-086 CN-CN ' + sc086_labels[ci] + ' GHz 300K: ' + (e300*100).toFixed(0) + '% off');
+        check(e4 < 0.20, 'SC-086 CN-CN ' + sc086_labels[ci] + ' GHz 4K: ' + (e4*100).toFixed(0) + '% off');
+    }
 
     console.log('');
     console.log('=== SUMMARY: ' + fails + ' failures ===');
