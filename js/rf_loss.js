@@ -152,3 +152,20 @@ function generateFrequencies(fMinGhz, fMaxGhz, nPoints) {
     }
     return freqs;
 }
+
+/**
+ * Generate logarithmically spaced frequency array.
+ * @param {number} fMinGhz - Minimum frequency [GHz]
+ * @param {number} fMaxGhz - Maximum frequency [GHz]
+ * @param {number} nPoints - Number of points
+ * @returns {number[]} Frequencies in Hz
+ */
+function generateFrequenciesLog(fMinGhz, fMaxGhz, nPoints) {
+    const logMin = Math.log10(fMinGhz * 1e9);
+    const logMax = Math.log10(fMaxGhz * 1e9);
+    const freqs = [];
+    for (let i = 0; i < nPoints; i++) {
+        freqs.push(Math.pow(10, logMin + (logMax - logMin) * i / (nPoints - 1)));
+    }
+    return freqs;
+}
