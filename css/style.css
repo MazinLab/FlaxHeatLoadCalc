@@ -464,7 +464,7 @@ tbody td:last-child {
 .s21-summary {
     display: flex;
     gap: 1.5rem;
-    margin-bottom: 0.75rem;
+    margin-top: 0.75rem;
     padding: 0.6rem 0.8rem;
     background: var(--bg-inset);
     border-radius: var(--radius-sm);
