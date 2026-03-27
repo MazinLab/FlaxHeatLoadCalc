@@ -202,6 +202,30 @@
             renderS21Plot('s21-chart', s21.frequencies,
                           s21.s21_total, s21.s21_conductor, s21.s21_dielectric);
             document.getElementById('s21-chart-container').style.display = '';
+
+            // S21 references
+            const s21RefsEl = document.getElementById('s21-refs');
+            const s21Seen = new Set();
+            const s21Lines = [];
+            s21Lines.push('<strong>Model:</strong> Coaxial TEM mode, Z\u2080 = 50 \u03A9. ' +
+                'Conductor loss: skin-effect R<sub>s</sub> = \u221A(\u03C0\u00B7\u03BC\u2080\u00B7f\u00B7\u03C1). ' +
+                'Dielectric loss: \u03B1<sub>d</sub> = \u03C0\u00B7f\u00B7\u221A\u03B5<sub>r</sub>\u00B7tan(\u03B4)/c. ' +
+                'Integrated along T(x) profile.');
+            for (const mat of [innerMat, outerMat]) {
+                if (!s21Seen.has(mat.name)) {
+                    s21Seen.add(mat.name);
+                    if (mat.superconducting) {
+                        s21Lines.push('<strong>' + mat.name + ':</strong> R<sub>s</sub> = 0 below T<sub>c</sub> = ' +
+                            mat.Tc + ' K. Above T<sub>c</sub>: \u03C1 = ' + mat.normalStateResistivity.toExponential(1) + ' \u03A9\u00B7m.');
+                    } else if (mat.resistivity) {
+                        const rho = getResistivity(mat, 300);
+                        s21Lines.push('<strong>' + mat.name + ':</strong> \u03C1 = ' + rho.toExponential(1) + ' \u03A9\u00B7m. ' + mat.source);
+                    }
+                }
+            }
+            s21Lines.push('<strong>' + dielMat.name + ':</strong> \u03B5<sub>r</sub> = ' + dielMat.epsilon_r +
+                ', tan(\u03B4) = ' + dielMat.tanDelta + '. ' + dielMat.source);
+            s21RefsEl.innerHTML = s21Lines.join('<br>');
         }
 
         // Show results
