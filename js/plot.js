@@ -176,3 +176,105 @@ function renderConductivityPlot(canvasId, materials, T_cold, T_hot, nPoints = 20
         }
     });
 }
+
+let s21Chart = null;
+
+/**
+ * Render (or update) the S21 cable loss plot.
+ * Shows total transmission plus conductor and dielectric breakdown.
+ *
+ * @param {string} canvasId - Canvas element ID
+ * @param {number[]} freqHz - Frequencies in Hz
+ * @param {number[]} s21Total - Total S21 in dB
+ * @param {number[]} s21Conductor - Conductor-only S21 in dB
+ * @param {number[]} s21Dielectric - Dielectric-only S21 in dB
+ */
+function renderS21Plot(canvasId, freqHz, s21Total, s21Conductor, s21Dielectric) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+
+    // Convert Hz to GHz for display
+    const freqGHz = freqHz.map(f => f / 1e9);
+
+    const datasets = [
+        {
+            label: 'Total S21',
+            data: freqGHz.map((f, i) => ({ x: f, y: s21Total[i] })),
+            borderColor: '#4fc3f7',
+            backgroundColor: 'rgba(79, 195, 247, 0.08)',
+            fill: true,
+            pointRadius: 0,
+            borderWidth: 2,
+            tension: 0.2
+        },
+        {
+            label: 'Conductor Loss',
+            data: freqGHz.map((f, i) => ({ x: f, y: s21Conductor[i] })),
+            borderColor: '#ff9f43',
+            backgroundColor: 'transparent',
+            pointRadius: 0,
+            borderWidth: 1.5,
+            borderDash: [6, 3],
+            tension: 0.2
+        },
+        {
+            label: 'Dielectric Loss',
+            data: freqGHz.map((f, i) => ({ x: f, y: s21Dielectric[i] })),
+            borderColor: '#66bb6a',
+            backgroundColor: 'transparent',
+            pointRadius: 0,
+            borderWidth: 1.5,
+            borderDash: [6, 3],
+            tension: 0.2
+        }
+    ];
+
+    if (s21Chart) {
+        s21Chart.data.datasets = datasets;
+        s21Chart.update();
+        return;
+    }
+
+    s21Chart = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: {
+                        color: '#8899aa',
+                        font: { family: "'Space Mono', monospace", size: 10 },
+                        boxWidth: 16,
+                        padding: 12
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function(items) {
+                            return items[0].parsed.x.toFixed(1) + ' GHz';
+                        },
+                        label: function(ctx) {
+                            return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(2) + ' dB';
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    type: 'linear',
+                    title: { display: true, text: 'Frequency (GHz)', color: '#8899aa' },
+                    ticks: { color: '#8899aa' },
+                    grid: { color: 'rgba(42, 58, 74, 0.5)' }
+                },
+                y: {
+                    type: 'linear',
+                    title: { display: true, text: 'S21 (dB)', color: '#8899aa' },
+                    ticks: { color: '#8899aa' },
+                    grid: { color: 'rgba(42, 58, 74, 0.5)' }
+                }
+            }
+        }
+    });
+}
