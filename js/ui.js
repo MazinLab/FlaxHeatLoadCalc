@@ -200,7 +200,7 @@
             const freqs = generateFrequenciesLog(0.01, 18, 200);
             const s21 = computeS21(profile, innerMat, outerMat, dielMat, a_m, b_m, freqs);
             renderS21Plot('s21-chart', s21.frequencies,
-                          s21.s21_total, s21.s21_conductor, s21.s21_dielectric);
+                          s21.s21_total, s21.s21_inner, s21.s21_outer, s21.s21_dielectric);
             document.getElementById('s21-chart-container').style.display = '';
 
             // S21 summary at 4 and 8 GHz
@@ -218,12 +218,13 @@
             let summaryHtml = '';
             for (const fGhz of [4, 8]) {
                 const tot = interpS21(s21.frequencies, s21.s21_total, fGhz);
-                const cond = interpS21(s21.frequencies, s21.s21_conductor, fGhz);
+                const inner = interpS21(s21.frequencies, s21.s21_inner, fGhz);
+                const outer = interpS21(s21.frequencies, s21.s21_outer, fGhz);
                 const diel = interpS21(s21.frequencies, s21.s21_dielectric, fGhz);
                 summaryHtml += '<div class="s21-col">' +
                     '<span class="s21-freq">' + fGhz + ' GHz</span>' +
                     '<span class="s21-val">' + tot.toFixed(2) + ' dB</span>' +
-                    '<span class="s21-breakdown">conductor ' + cond.toFixed(2) + ' / dielectric ' + diel.toFixed(2) + '</span>' +
+                    '<span class="s21-breakdown">inner ' + inner.toFixed(2) + ' / outer ' + outer.toFixed(2) + ' / diel ' + diel.toFixed(2) + '</span>' +
                     '</div>';
             }
             s21SummaryEl.innerHTML = summaryHtml;

@@ -181,18 +181,18 @@ let s21Chart = null;
 
 /**
  * Render (or update) the S21 cable loss plot.
- * Shows total transmission plus conductor and dielectric breakdown.
+ * Shows total transmission plus inner/outer conductor and dielectric breakdown.
  *
  * @param {string} canvasId - Canvas element ID
  * @param {number[]} freqHz - Frequencies in Hz
  * @param {number[]} s21Total - Total S21 in dB
- * @param {number[]} s21Conductor - Conductor-only S21 in dB
+ * @param {number[]} s21Inner - Inner conductor loss in dB
+ * @param {number[]} s21Outer - Outer conductor loss in dB
  * @param {number[]} s21Dielectric - Dielectric-only S21 in dB
  */
-function renderS21Plot(canvasId, freqHz, s21Total, s21Conductor, s21Dielectric) {
+function renderS21Plot(canvasId, freqHz, s21Total, s21Inner, s21Outer, s21Dielectric) {
     const ctx = document.getElementById(canvasId).getContext('2d');
 
-    // Convert Hz to GHz for display
     const freqGHz = freqHz.map(f => f / 1e9);
 
     const datasets = [
@@ -207,8 +207,8 @@ function renderS21Plot(canvasId, freqHz, s21Total, s21Conductor, s21Dielectric) 
             tension: 0.2
         },
         {
-            label: 'Conductor Loss',
-            data: freqGHz.map((f, i) => ({ x: f, y: s21Conductor[i] })),
+            label: 'Inner Conductor',
+            data: freqGHz.map((f, i) => ({ x: f, y: s21Inner[i] })),
             borderColor: '#ff9f43',
             backgroundColor: 'transparent',
             pointRadius: 0,
@@ -217,7 +217,17 @@ function renderS21Plot(canvasId, freqHz, s21Total, s21Conductor, s21Dielectric) 
             tension: 0.2
         },
         {
-            label: 'Dielectric Loss',
+            label: 'Outer Conductor',
+            data: freqGHz.map((f, i) => ({ x: f, y: s21Outer[i] })),
+            borderColor: '#e57373',
+            backgroundColor: 'transparent',
+            pointRadius: 0,
+            borderWidth: 1.5,
+            borderDash: [6, 3],
+            tension: 0.2
+        },
+        {
+            label: 'Dielectric',
             data: freqGHz.map((f, i) => ({ x: f, y: s21Dielectric[i] })),
             borderColor: '#66bb6a',
             backgroundColor: 'transparent',

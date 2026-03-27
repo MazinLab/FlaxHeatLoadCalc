@@ -138,7 +138,7 @@ const testCode = `
     var s21 = computeS21(flaxProfile, MATERIALS.nbti, MATERIALS.nbti, MATERIALS.ptfe, a_m, b_m, freqs);
 
     // SC cable below Tc: conductor loss should be zero
-    check(s21.s21_conductor.every(function(v) { return v === 0; }),
+    check(s21.s21_inner.every(function(v) { return v === 0; }),
         'FLAX SC cable 0.1-1K: conductor S21 = 0 dB (all superconducting)');
 
     // Total S21 should equal dielectric-only (since conductor = 0)
@@ -146,6 +146,9 @@ const testCode = `
         return Math.abs(v - s21.s21_dielectric[i]) < 1e-10;
     });
     check(totalMatchesDiel, 'FLAX SC: total S21 = dielectric-only S21');
+
+    check(s21.s21_outer.every(function(v) { return v === 0; }),
+        'FLAX SC cable 0.1-1K: outer conductor S21 = 0 dB (superconducting)');
 
     // All S21 values should be negative (lossy) or zero
     check(s21.s21_total.every(function(v) { return v <= 0; }), 'S21 total is non-positive (lossy)');

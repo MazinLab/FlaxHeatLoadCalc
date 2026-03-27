@@ -104,36 +104,47 @@ function computeS21(profile, innerMat, outerMat, dielMat, a, b, frequencies) {
     const n = x.length;
     const epsilon_r = dielMat.epsilon_r;
     const tanDelta = dielMat.tanDelta;
+    const lnBA = Math.log(b / a);
 
     const s21_total = [];
-    const s21_conductor = [];
+    const s21_inner = [];
+    const s21_outer = [];
     const s21_dielectric = [];
 
     for (const f of frequencies) {
-        let integralConductor = 0;
+        let integralInner = 0;
+        let integralOuter = 0;
         let integralDielectric = 0;
 
-        // Dielectric attenuation is constant along the cable (no T-dependence for now)
         const alpha_d = dielectricAttenuation(f, epsilon_r, tanDelta);
 
         for (let i = 0; i < n - 1; i++) {
             const dx = x[i + 1] - x[i];
 
-            // Conductor loss — trapezoidal rule (T-dependent via resistivity)
-            const alpha_c_i = conductorLossAtPoint(f, T[i], innerMat, outerMat, a, b);
-            const alpha_c_next = conductorLossAtPoint(f, T[i + 1], innerMat, outerMat, a, b);
-            integralConductor += 0.5 * (alpha_c_i + alpha_c_next) * dx;
+            // Inner conductor loss
+            const Rs_in_i = materialSurfaceResistance(innerMat, T[i], f);
+            const Rs_in_next = materialSurfaceResistance(innerMat, T[i + 1], f);
+            const alpha_in_i = Rs_in_i / (a * 2 * Z0_COAX * lnBA);
+            const alpha_in_next = Rs_in_next / (a * 2 * Z0_COAX * lnBA);
+            integralInner += 0.5 * (alpha_in_i + alpha_in_next) * dx;
 
-            // Dielectric loss — constant, just multiply by dx
+            // Outer conductor loss
+            const Rs_out_i = materialSurfaceResistance(outerMat, T[i], f);
+            const Rs_out_next = materialSurfaceResistance(outerMat, T[i + 1], f);
+            const alpha_out_i = Rs_out_i / (b * 2 * Z0_COAX * lnBA);
+            const alpha_out_next = Rs_out_next / (b * 2 * Z0_COAX * lnBA);
+            integralOuter += 0.5 * (alpha_out_i + alpha_out_next) * dx;
+
             integralDielectric += alpha_d * dx;
         }
 
-        s21_conductor.push(-NP_TO_DB * integralConductor);
+        s21_inner.push(-NP_TO_DB * integralInner);
+        s21_outer.push(-NP_TO_DB * integralOuter);
         s21_dielectric.push(-NP_TO_DB * integralDielectric);
-        s21_total.push(-NP_TO_DB * (integralConductor + integralDielectric));
+        s21_total.push(-NP_TO_DB * (integralInner + integralOuter + integralDielectric));
     }
 
-    return { frequencies, s21_total, s21_conductor, s21_dielectric };
+    return { frequencies, s21_total, s21_inner, s21_outer, s21_dielectric };
 }
 
 /**
