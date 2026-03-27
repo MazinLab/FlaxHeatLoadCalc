@@ -193,6 +193,17 @@
         }
         refsEl.innerHTML = refLines.join('<br>');
 
+        // RF cable loss (S21)
+        const a_m = (innerDiam / 2) * 1e-6;
+        const b_m = a_m + dielThick * 1e-6;
+        if (dielMat.epsilon_r !== undefined && dielMat.tanDelta !== undefined) {
+            const freqs = generateFrequencies(1, 18, 200);
+            const s21 = computeS21(profile, innerMat, outerMat, dielMat, a_m, b_m, freqs);
+            renderS21Plot('s21-chart', s21.frequencies,
+                          s21.s21_total, s21.s21_conductor, s21.s21_dielectric);
+            document.getElementById('s21-chart-container').style.display = '';
+        }
+
         // Show results
         resultsDisplay.className = 'results-visible';
     }

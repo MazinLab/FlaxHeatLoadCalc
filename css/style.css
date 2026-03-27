@@ -455,7 +455,8 @@ tbody td:last-child {
 }
 
 #temp-profile-chart,
-#conductivity-chart {
+#conductivity-chart,
+#s21-chart {
     display: block;
     width: 100%;
 }
