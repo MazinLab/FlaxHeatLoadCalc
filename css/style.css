@@ -107,6 +107,13 @@ header .subtitle {
     letter-spacing: 0.02em;
 }
 
+header .disclaimer {
+    margin-top: 0.4rem;
+    font-size: 0.72rem;
+    color: var(--warm);
+    opacity: 0.85;
+}
+
 /* ── Main layout ── */
 
 main {

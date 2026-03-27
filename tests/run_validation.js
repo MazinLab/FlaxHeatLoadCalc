@@ -33,6 +33,8 @@ const testCode = `
         ['nbti', 0.5, 1e-4, 0.1, 'NbTi k(0.5K)'],
         ['nbti', 0.1, 1e-5, 0.01, 'NbTi k(0.1K)'],
         ['ptfe', 0.5, 1e-4, 0.01, 'PTFE k(0.5K)'],
+        ['copper_rrr50', 0.5, 25, 50, 'Cu RRR50 k(0.5K)'],
+        ['copper_rrr100', 0.5, 50, 100, 'Cu RRR100 k(0.5K)'],
     ];
     for (const [matId, T, lo, hi, label] of spotChecks) {
         const k = getThermalConductivity(MATERIALS[matId], T);
@@ -61,6 +63,7 @@ const testCode = `
     console.log('  Computed: ' + Q_nW.toFixed(3) + ' nW/trace');
     console.log('  Target:   ~5 nW/trace (Smith et al.)');
     check(Q_nW > 0.5 && Q_nW < 100, 'FLAX heat load in [0.5, 100] nW');
+    check(Q_nW > 10 && Q_nW < 20, 'FLAX heat load regression pin [10, 20] nW — got ' + Q_nW.toFixed(3));
 
     console.log('  --- Component breakdown ---');
     for (const comp of components) {

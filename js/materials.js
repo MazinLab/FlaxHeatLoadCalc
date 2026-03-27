@@ -67,6 +67,11 @@ function logPoly(coeffs, T) {
 function nistCopperRational(coeffs, T) {
     const [a, b, c, d, e, f, g, h, ii] = coeffs;
     const W = Math.log10(T);
+    // W^0.5 is only real for W >= 0 (T >= 1 K).
+    // Below T = 1 K, fall back to the T = 1 K intercept value (k = 10^a).
+    if (W < 0) {
+        return Math.pow(10, a);
+    }
     const W05 = Math.sqrt(W);
     const W15 = W * W05;
     const W2 = W * W;
@@ -192,12 +197,12 @@ const MATERIALS = {
         category: 'conductor',
         superconducting: false,
         validRange: [0.1, 300],
-        stitchRange: [1.0, 4.0],
+        stitchRange: [1.0, 2.0],
         subK: {
             // Wiedemann-Franz: k = L0*T/rho_0
-            // RRR=50 → rho_0 ≈ 3.4e-9 Ohm·m → k ≈ L0/rho_0 * T = 7.19*T
+            // RRR=50 → rho_0 ≈ 3.4e-10 Ohm·m → k ≈ L0/rho_0 * T = 71.9*T
             type: 'power_law',
-            a: 7.19,
+            a: 71.9,
             b: 1.0
         },
         mainFit: {
@@ -212,11 +217,11 @@ const MATERIALS = {
         category: 'conductor',
         superconducting: false,
         validRange: [0.1, 300],
-        stitchRange: [1.0, 4.0],
+        stitchRange: [1.0, 2.0],
         subK: {
-            // RRR=100 → rho_0 ≈ 1.7e-9 Ohm·m → k ≈ 14.4*T
+            // RRR=100 → rho_0 ≈ 1.7e-10 Ohm·m → k ≈ 144*T
             type: 'power_law',
-            a: 14.4,
+            a: 144,
             b: 1.0
         },
         mainFit: {
@@ -231,11 +236,11 @@ const MATERIALS = {
         category: 'conductor',
         superconducting: false,
         validRange: [0.1, 300],
-        stitchRange: [1.0, 4.0],
+        stitchRange: [1.0, 2.0],
         subK: {
-            // RRR=150 → rho_0 ≈ 1.13e-9 Ohm·m → k ≈ 21.6*T
+            // RRR=150 → rho_0 ≈ 1.13e-10 Ohm·m → k ≈ 216*T
             type: 'power_law',
-            a: 21.6,
+            a: 216,
             b: 1.0
         },
         mainFit: {
@@ -250,11 +255,13 @@ const MATERIALS = {
         category: 'conductor',
         superconducting: false,
         validRange: [0.1, 300],
-        stitchRange: [1.0, 4.0],
+        stitchRange: [3.0, 4.0],
         subK: {
-            // RRR=300 → rho_0 ≈ 5.7e-10 Ohm·m → k ≈ 43.0*T
+            // RRR=300 → rho_0 ≈ 5.7e-11 Ohm·m → k ≈ 430*T
+            // Note: NIST rational polynomial extrapolates badly below 4K for this RRR,
+            // so stitch range is raised to [3, 4] K to avoid the pathological region.
             type: 'power_law',
-            a: 43.0,
+            a: 430,
             b: 1.0
         },
         mainFit: {
@@ -269,11 +276,11 @@ const MATERIALS = {
         category: 'conductor',
         superconducting: false,
         validRange: [0.1, 300],
-        stitchRange: [1.0, 4.0],
+        stitchRange: [1.0, 2.0],
         subK: {
-            // RRR=500 → rho_0 ≈ 3.4e-10 Ohm·m → k ≈ 71.7*T
+            // RRR=500 → rho_0 ≈ 3.4e-11 Ohm·m → k ≈ 717*T
             type: 'power_law',
-            a: 71.7,
+            a: 717,
             b: 1.0
         },
         mainFit: {
