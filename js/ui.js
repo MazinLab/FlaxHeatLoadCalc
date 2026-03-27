@@ -203,6 +203,31 @@
                           s21.s21_total, s21.s21_conductor, s21.s21_dielectric);
             document.getElementById('s21-chart-container').style.display = '';
 
+            // S21 summary at 4 and 8 GHz
+            const s21SummaryEl = document.getElementById('s21-summary');
+            function interpS21(freqsHz, values, targetGhz) {
+                const targetHz = targetGhz * 1e9;
+                for (let i = 0; i < freqsHz.length - 1; i++) {
+                    if (freqsHz[i] <= targetHz && freqsHz[i + 1] >= targetHz) {
+                        const frac = (targetHz - freqsHz[i]) / (freqsHz[i + 1] - freqsHz[i]);
+                        return values[i] + frac * (values[i + 1] - values[i]);
+                    }
+                }
+                return values[values.length - 1];
+            }
+            let summaryHtml = '';
+            for (const fGhz of [4, 8]) {
+                const tot = interpS21(s21.frequencies, s21.s21_total, fGhz);
+                const cond = interpS21(s21.frequencies, s21.s21_conductor, fGhz);
+                const diel = interpS21(s21.frequencies, s21.s21_dielectric, fGhz);
+                summaryHtml += '<div class="s21-col">' +
+                    '<span class="s21-freq">' + fGhz + ' GHz</span>' +
+                    '<span class="s21-val">' + tot.toFixed(2) + ' dB</span>' +
+                    '<span class="s21-breakdown">conductor ' + cond.toFixed(2) + ' / dielectric ' + diel.toFixed(2) + '</span>' +
+                    '</div>';
+            }
+            s21SummaryEl.innerHTML = summaryHtml;
+
             // S21 references
             const s21RefsEl = document.getElementById('s21-refs');
             const s21Seen = new Set();

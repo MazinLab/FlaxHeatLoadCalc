@@ -461,6 +461,40 @@ tbody td:last-child {
     width: 100%;
 }
 
+.s21-summary {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 0.75rem;
+    padding: 0.6rem 0.8rem;
+    background: var(--bg-inset);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+}
+
+.s21-summary .s21-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.s21-summary .s21-freq {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+}
+
+.s21-summary .s21-val {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.s21-summary .s21-breakdown {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+}
+
 .chart-refs {
     margin-top: 0.75rem;
     padding-top: 0.6rem;
