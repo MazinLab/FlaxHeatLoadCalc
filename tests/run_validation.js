@@ -12,6 +12,7 @@ const ctx = vm.createContext({
 
 vm.runInContext(fs.readFileSync('js/materials.js', 'utf8'), ctx);
 vm.runInContext(fs.readFileSync('js/thermal.js', 'utf8'), ctx);
+vm.runInContext(fs.readFileSync('js/rf_loss.js', 'utf8'), ctx);
 vm.runInContext(fs.readFileSync('js/presets.js', 'utf8'), ctx);
 
 const testCode = `
@@ -97,6 +98,66 @@ const testCode = `
     var Q_cu = computeHeatLoad(cuComps, 0.3048, 4, 300);
     console.log('  Cu coax 4-300K: ' + (Q_cu*1e3).toFixed(2) + ' mW');
     check(Q_cu > 1e-3, 'Cu coax 4-300K > 1 mW');
+
+    // ========== RF Cable Loss Tests ==========
+    console.log('');
+    console.log('=== RF Cable Loss (S21) Tests ===');
+
+    // Surface resistance of copper at 1 GHz: Rs = sqrt(pi * mu0 * f * rho)
+    // rho = 1.7e-8 (Cu 300K), f = 1e9, mu0 = 4*pi*1e-7
+    // Rs = sqrt(pi * 4*pi*1e-7 * 1e9 * 1.7e-8) = sqrt(6.71e-5) ≈ 0.00819 Ohm
+    var Rs_cu = surfaceResistance(1.7e-8, 1e9);
+    check(Math.abs(Rs_cu - 0.00819) / 0.00819 < 0.02,
+        'Surface resistance Cu at 1 GHz = ' + (Rs_cu*1000).toFixed(3) + ' mOhm (expect 8.19 mOhm)');
+
+    // Dielectric attenuation: alpha_d = pi*f*sqrt(eps_r)*tan(delta)/c
+    // PTFE at 1 GHz: pi*1e9*sqrt(2.1)*2e-4 / 3e8 ≈ 3.04e-3 Np/m
+    var alpha_d = dielectricAttenuation(1e9, 2.1, 2e-4);
+    check(Math.abs(alpha_d - 3.04e-3) / 3.04e-3 < 0.02,
+        'Dielectric attenuation PTFE at 1 GHz = ' + alpha_d.toExponential(3) + ' Np/m (expect 3.04e-3)');
+
+    // NbTi below Tc: zero conductor loss
+    var Rs_nbti = materialSurfaceResistance(MATERIALS.nbti, 1.0, 8e9);
+    check(Rs_nbti === 0, 'NbTi at 1K (below Tc=9.8K): Rs = 0');
+
+    // NbTi above Tc: finite conductor loss
+    var Rs_nbti_above = materialSurfaceResistance(MATERIALS.nbti, 15.0, 8e9);
+    check(Rs_nbti_above > 0, 'NbTi at 15K (above Tc): Rs = ' + Rs_nbti_above.toExponential(3) + ' > 0');
+
+    // Full S21 integration — FLAX v2, SC cable, 0.1-1K, 30 cm
+    var flaxAreas = computeAreas('ribbon', 127, 102, 50.8, 3556, 25.4, 2);
+    var a_m = 63.5e-6;   // inner radius
+    var b_m = a_m + 102e-6;  // outer radius at dielectric boundary
+    var flaxProfile = computeTemperatureProfile([
+        { material: MATERIALS.nbti, area: flaxAreas.innerArea },
+        { material: MATERIALS.ptfe, area: flaxAreas.dielectricArea },
+        { material: MATERIALS.nbti, area: flaxAreas.outerArea }
+    ], 0.30, 0.1, 1.0, 100);
+
+    var freqs = generateFrequencies(1, 18, 50);
+    var s21 = computeS21(flaxProfile, MATERIALS.nbti, MATERIALS.nbti, MATERIALS.ptfe, a_m, b_m, freqs);
+
+    // SC cable below Tc: conductor loss should be zero
+    check(s21.s21_conductor.every(function(v) { return v === 0; }),
+        'FLAX SC cable 0.1-1K: conductor S21 = 0 dB (all superconducting)');
+
+    // Total S21 should equal dielectric-only (since conductor = 0)
+    var totalMatchesDiel = s21.s21_total.every(function(v, i) {
+        return Math.abs(v - s21.s21_dielectric[i]) < 1e-10;
+    });
+    check(totalMatchesDiel, 'FLAX SC: total S21 = dielectric-only S21');
+
+    // All S21 values should be negative (lossy) or zero
+    check(s21.s21_total.every(function(v) { return v <= 0; }), 'S21 total is non-positive (lossy)');
+
+    // Higher frequency should have more loss (more negative S21)
+    check(s21.s21_total[49] < s21.s21_total[0],
+        'S21 at 18 GHz (' + s21.s21_total[49].toFixed(2) + ' dB) < S21 at 1 GHz (' + s21.s21_total[0].toFixed(2) + ' dB)');
+
+    // Report FLAX S21 at 8 GHz for comparison with Smith et al. (~1.5 dB)
+    var idx8ghz = Math.round((8 - 1) / (18 - 1) * 49);
+    console.log('  FLAX v2 S21 at 8 GHz (dielectric only, 30cm): ' + s21.s21_total[idx8ghz].toFixed(3) + ' dB');
+    console.log('  Smith et al. measured: ~-1.5 dB at 8 GHz');
 
     console.log('');
     console.log('=== SUMMARY: ' + fails + ' failures ===');
