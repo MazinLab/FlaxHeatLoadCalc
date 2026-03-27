@@ -138,6 +138,41 @@ function getThermalConductivity(material, T) {
     }
 }
 
+/**
+ * Evaluate electrical resistivity ρ(T) for a conductor material.
+ * Uses the same piecewise stitching approach as getThermalConductivity().
+ * @param {object} material - Material definition with resistivity field
+ * @param {number} T - Temperature in Kelvin
+ * @returns {number} Electrical resistivity in Ohm·m
+ */
+function getResistivity(material, T) {
+    if (!material.resistivity) {
+        throw new Error('No resistivity data for material: ' + material.name);
+    }
+    const r = material.resistivity;
+    const T_min = r.validRange ? r.validRange[0] : material.validRange[0];
+    const T_max = r.validRange ? r.validRange[1] : material.validRange[1];
+    T = Math.max(T_min, Math.min(T_max, T));
+
+    if (!r.subK) {
+        return evaluateFit(r.mainFit, T);
+    }
+
+    const tLo = r.stitchRange[0];
+    const tHi = r.stitchRange[1];
+
+    if (T <= tLo) {
+        return evaluateFit(r.subK, T);
+    } else if (T >= tHi) {
+        return evaluateFit(r.mainFit, T);
+    } else {
+        const frac = (Math.log10(T) - Math.log10(tLo)) / (Math.log10(tHi) - Math.log10(tLo));
+        const logRhoSubK = Math.log10(evaluateFit(r.subK, T));
+        const logRhoMain = Math.log10(evaluateFit(r.mainFit, T));
+        return Math.pow(10, logRhoSubK * (1 - frac) + logRhoMain * frac);
+    }
+}
+
 // --- Material Database ---
 
 const MATERIALS = {
@@ -165,7 +200,9 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [-1.4262, 2.5675, -2.6517, 2.2428, -1.1561, 0.3547, -0.0594, 0.0041, 0]
         },
-        source: 'Sub-K: Daal et al. 2019, Cryogenics 98, 47-59. Main: Duthil 2015 (arXiv:1501.07100) Table A.3'
+        source: 'Sub-K: Daal et al. 2019, Cryogenics 98, 47-59. Main: Duthil 2015 (arXiv:1501.07100) Table A.3',
+        Tc: 9.8,
+        normalStateResistivity: 6.0e-7  // Ohm·m, NbTi above Tc
     },
 
     nb: {
@@ -189,7 +226,9 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [-0.1200, 2.1430, -1.0541, 0.3028, -0.0402, -0.0032, 0.0010, 0, 0]
         },
-        source: 'Sub-K: Kes et al. 1974, J. Low Temp. Phys. 17, 341; Townsend & Sutton 1962. Main: Touloukian TPRC Vol 1; Koechlin & Bonin 1995. Note: RRR~40 (commercial grade); k is highly RRR-dependent below 20K.'
+        source: 'Sub-K: Kes et al. 1974, J. Low Temp. Phys. 17, 341; Townsend & Sutton 1962. Main: Touloukian TPRC Vol 1; Koechlin & Bonin 1995. Note: RRR~40 (commercial grade); k is highly RRR-dependent below 20K.',
+        Tc: 9.25,
+        normalStateResistivity: 1.5e-7  // Ohm·m, commercial Nb RRR~40 above Tc
     },
 
     copper_rrr50: {
@@ -209,7 +248,10 @@ const MATERIALS = {
             type: 'nist_copper_rational',
             coeffs: [1.8743, -0.41538, -0.6018, 0.13294, 0.26426, -0.0219, -0.051276, 0.0014871, 0.003723]
         },
-        source: 'NIST Cryogenic Materials Database, OFHC Copper RRR=50'
+        source: 'NIST Cryogenic Materials Database, OFHC Copper RRR=50',
+        resistivity: {
+            mainFit: { type: 'power_law', a: 3.4e-10, b: 0 }  // rho_0 = 1.7e-8 / 50
+        }
     },
 
     copper_rrr100: {
@@ -228,7 +270,10 @@ const MATERIALS = {
             type: 'nist_copper_rational',
             coeffs: [2.2154, -0.47461, -0.88068, 0.13871, 0.29505, -0.02043, -0.04831, 0.001281, 0.003207]
         },
-        source: 'NIST Cryogenic Materials Database, OFHC Copper RRR=100'
+        source: 'NIST Cryogenic Materials Database, OFHC Copper RRR=100',
+        resistivity: {
+            mainFit: { type: 'power_law', a: 1.7e-10, b: 0 }  // rho_0 = 1.7e-8 / 100
+        }
     },
 
     copper_rrr150: {
@@ -247,7 +292,10 @@ const MATERIALS = {
             type: 'nist_copper_rational',
             coeffs: [2.3797, -0.4918, -0.98615, 0.13942, 0.30475, -0.019713, -0.046897, 0.0011969, 0.0029988]
         },
-        source: 'NIST Cryogenic Materials Database, OFHC Copper RRR=150'
+        source: 'NIST Cryogenic Materials Database, OFHC Copper RRR=150',
+        resistivity: {
+            mainFit: { type: 'power_law', a: 1.13e-10, b: 0 }  // rho_0 = 1.7e-8 / 150
+        }
     },
 
     copper_rrr300: {
@@ -268,7 +316,10 @@ const MATERIALS = {
             type: 'nist_copper_rational',
             coeffs: [1.357, 0.3981, 2.669, -0.1346, -0.6683, 0.01342, 0.05773, 0.0002147, 0]
         },
-        source: 'NIST Cryogenic Materials Database, OFHC Copper RRR=300'
+        source: 'NIST Cryogenic Materials Database, OFHC Copper RRR=300',
+        resistivity: {
+            mainFit: { type: 'power_law', a: 5.67e-11, b: 0 }  // rho_0 = 1.7e-8 / 300
+        }
     },
 
     copper_rrr500: {
@@ -287,7 +338,10 @@ const MATERIALS = {
             type: 'nist_copper_rational',
             coeffs: [2.8075, -0.54074, -1.2777, 0.15362, 0.36444, -0.02105, -0.051727, 0.0012226, 0.0030964]
         },
-        source: 'NIST Cryogenic Materials Database, OFHC Copper RRR=500'
+        source: 'NIST Cryogenic Materials Database, OFHC Copper RRR=500',
+        resistivity: {
+            mainFit: { type: 'power_law', a: 3.4e-11, b: 0 }  // rho_0 = 1.7e-8 / 500
+        }
     },
 
     aluminum: {
@@ -307,7 +361,10 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [0.07918, 1.0957, -0.07277, 0.08084, 0.02803, -0.09464, 0.04179, -0.00571, 0]
         },
-        source: 'NIST Cryogenic Materials Database, Aluminum 6061-T6'
+        source: 'NIST Cryogenic Materials Database, Aluminum 6061-T6',
+        resistivity: {
+            mainFit: { type: 'power_law', a: 5.0e-9, b: 0 }  // residual rho for 6061-T6
+        }
     },
 
     phosphor_bronze: {
@@ -327,7 +384,10 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [-2.2680, 4.6089, -6.3553, 6.6573, -4.5900, 2.0600, -0.5765, 0.0906, -0.0060]
         },
-        source: 'NIST Cryogenic Materials Database, Phosphor Bronze C51000. Sub-K: Lakeshore wire catalogue.'
+        source: 'NIST Cryogenic Materials Database, Phosphor Bronze C51000. Sub-K: Lakeshore wire catalogue.',
+        resistivity: {
+            mainFit: { type: 'power_law', a: 1.1e-7, b: 0 }  // nearly constant
+        }
     },
 
     manganin: {
@@ -347,7 +407,10 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [-2.6395, 3.8421, -3.0940, 1.8578, -0.7279, 0.1756, -0.0216, 0, 0]
         },
-        source: 'Sub-K: Literature power-law fit. Main: Lakeshore wire catalogue data.'
+        source: 'Sub-K: Literature power-law fit. Main: Lakeshore wire catalogue data.',
+        resistivity: {
+            mainFit: { type: 'power_law', a: 4.3e-7, b: 0 }  // nearly constant
+        }
     },
 
     cuni: {
@@ -367,7 +430,10 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [-3.198, 20.499, -66.114, 117.690, -121.477, 76.215, -28.749, 5.985, -0.527]
         },
-        source: 'Main: arXiv:2502.01945 (SC-086 coax study). Sub-K: CERN Constantan approx.'
+        source: 'Main: arXiv:2502.01945 (SC-086 coax study). Sub-K: CERN Constantan approx.',
+        resistivity: {
+            mainFit: { type: 'power_law', a: 3.5e-7, b: 0 }  // nearly constant
+        }
     },
 
     ss304: {
@@ -387,7 +453,10 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [-1.4087, 1.3982, 0.2543, -0.6260, 0.2334, 0.4256, -0.4658, 0.1650, -0.0199]
         },
-        source: 'NIST Cryogenic Materials Database, 304 Stainless Steel.'
+        source: 'NIST Cryogenic Materials Database, 304 Stainless Steel.',
+        resistivity: {
+            mainFit: { type: 'power_law', a: 7.2e-7, b: 0 }  // approximately constant
+        }
     },
 
     ss304_ag: {
@@ -407,7 +476,11 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [-1.4087, 1.3982, 0.2543, -0.6260, 0.2334, 0.4256, -0.4658, 0.1650, -0.0199]
         },
-        source: 'NIST 304 SS. Note: thin Ag plating improves electrical contact but does not significantly change bulk thermal conductivity.'
+        source: 'NIST 304 SS. Note: thin Ag plating improves electrical contact but does not significantly change bulk thermal conductivity.',
+        // For RF, skin depth at GHz is ~1 µm, well within Ag plating — use silver resistivity.
+        resistivity: {
+            mainFit: { type: 'power_law', a: 1.6e-8, b: 0 }  // silver, rho(300K)
+        }
     },
 
     nichrome: {
@@ -427,7 +500,10 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [-2.5200, 3.3100, -2.4500, 1.3200, -0.4800, 0.1050, -0.0120, 0, 0]
         },
-        source: 'Lakeshore wire catalogue data.'
+        source: 'Lakeshore wire catalogue data.',
+        resistivity: {
+            mainFit: { type: 'power_law', a: 1.1e-6, b: 0 }  // nearly constant
+        }
     },
 
     // =====================
@@ -452,6 +528,8 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [2.7380, -30.677, 89.430, -136.99, 124.69, -69.556, 23.320, -4.3135, 0.33829]
         },
+        epsilon_r: 2.1,
+        tanDelta: 2e-4,
         source: 'NIST Cryogenic Materials Database, Teflon. Sub-K: Kushino et al. 2005, Cryogenics 45(9).'
     },
 
@@ -472,6 +550,8 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [2.7380, -30.677, 89.430, -136.99, 124.69, -69.556, 23.320, -4.3135, 0.33829]
         },
+        epsilon_r: 2.1,
+        tanDelta: 2e-4,
         source: 'Using PTFE as proxy — FEP cryogenic k(T) not well documented. Per Smith et al. 2024 (IEEE TAS).'
     },
 
@@ -493,6 +573,8 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [5.73101, -39.5199, 79.9313, -83.8572, 50.9157, -17.9835, 3.42413, -0.27133, 0]
         },
+        epsilon_r: 3.4,
+        tanDelta: 2.75e-4,
         source: 'NIST Cryogenic Materials Database, Polyimide/Kapton. Sub-K: Daal et al. 2019.'
     },
 
@@ -513,6 +595,8 @@ const MATERIALS = {
             type: 'nist_log_poly',
             coeffs: [-4.1236, 13.788, -26.068, 26.272, -14.663, 4.4954, -0.6905, 0.0397, 0]
         },
+        epsilon_r: 4.5,
+        tanDelta: 0.01,
         source: 'NIST Cryogenic Materials Database, G-10CR (normal to cloth).'
     }
 };
