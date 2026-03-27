@@ -263,7 +263,7 @@ function renderS21Plot(canvasId, freqHz, s21Total, s21Conductor, s21Dielectric) 
             },
             scales: {
                 x: {
-                    type: 'logarithmic',
+                    type: 'linear',
                     title: { display: true, text: 'Frequency (GHz)', color: '#8899aa' },
                     ticks: { color: '#8899aa' },
                     grid: { color: 'rgba(42, 58, 74, 0.5)' }
